@@ -101,8 +101,45 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   });
 });
 
+/**
+ * API key authenticated procedure
+ *
+ * This procedure is used for routes that should be accessible via API key authentication.
+ * It verifies the API key and associates the request with the corresponding user.
+ */
+export const apiKeyProcedure = t.procedure.use(async ({ ctx, next }) => {
+  const apiKey = ctx.headers.get("x-api-key");
+  if (!apiKey) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "API key is required" });
+  }
+
+  // Verify the API key and get the associated user
+  const apiKeyRecord = await ctx.db.query.apiKeys.findFirst({
+    where: (apiKeys, { eq }) => eq(apiKeys.key, apiKey),
+    with: {
+      user: true,
+    },
+  });
+
+  if (!apiKeyRecord || !apiKeyRecord.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
+  }
+
+  return next({
+    ctx: {
+      user: apiKeyRecord.user,
+      apiKey: apiKeyRecord.key,
+    },
+  });
+});
+
 export type TRPCContext = inferAsyncReturnType<typeof createTRPCContext>;
 export type ProtectedTRPCContext = TRPCContext & {
   user: NonNullable<TRPCContext["user"]>;
   session: NonNullable<TRPCContext["session"]>;
+};
+
+export type APIKeyTRPCContext = TRPCContext & {
+  user: NonNullable<TRPCContext["user"]>;
+  apiKey: string;
 };

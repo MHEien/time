@@ -112,4 +112,5 @@ export {
   ChevronRightIcon,
   DotsHorizontalIcon,
   ArrowLeftIcon,
+  CalendarIcon
 } from "@radix-ui/react-icons";

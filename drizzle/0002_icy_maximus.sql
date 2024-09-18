@@ -1,0 +1,1 @@
+ALTER TABLE "acme_api_keys" ALTER COLUMN "id" SET DATA TYPE varchar(15);
