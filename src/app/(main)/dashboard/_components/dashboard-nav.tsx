@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileTextIcon, CreditCard, GearIcon } from "@/components/icons";
+import { FileTextIcon, CreditCard, GearIcon, CalendarIcon } from "@/components/icons";
 
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,11 @@ const items = [
     href: "/dashboard",
     icon: FileTextIcon,
   },
-
+  {
+    title: "Calendar",
+    href: "/dashboard/calendar",
+    icon: CalendarIcon,
+  },
   {
     title: "Billing",
     href: "/dashboard/billing",
