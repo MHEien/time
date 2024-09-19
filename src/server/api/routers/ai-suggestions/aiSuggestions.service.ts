@@ -191,6 +191,9 @@ export const generateNextWeekEvents = async (ctx: ProtectedTRPCContext) => {
 
   const prompt = `
           You are an AI assistant tasked with generating a recommended calendar schedule for the upcoming week based on the given input. The input data is structured as follows:
+
+          <todays_date> ${format(new Date(), 'yyyy-MM-dd')} </todays_date>
+          <todays_day_of_week> ${format(new Date(), 'EEEE')} </todays_day_of_week>
   
           <user_settings> ${JSON.stringify(llmInput.userSettings, null, 2)} </user_settings>
   

@@ -12,9 +12,8 @@ export const metadata: Metadata = {
 function LandingPageLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      <Header />
+
       {children}
-      <div className="h-20"></div>
       <Footer />
     </>
   );
