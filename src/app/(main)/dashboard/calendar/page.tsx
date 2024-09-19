@@ -1,6 +1,8 @@
 import CalendarComponent from "../_components/calendar";
 import { api } from '@/trpc/server';
 
+export const dynamic = "force-dynamic";
+
 export default async function CalendarPage() {
 
   const initialEvents = await api.calendar.myEvents.query({}) 
@@ -11,3 +13,4 @@ export default async function CalendarPage() {
       <CalendarComponent initialEvents={initialEvents} initialAiSuggestions={aiSuggestions} />
   );
 }
+

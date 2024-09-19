@@ -30,4 +30,7 @@ export const activityRouter = createTRPCRouter({
     createWithApiKey: apiKeyProcedure
     .input(inputs.createActivityWithApiKeySchema)
     .mutation(({ ctx, input }) => services.createActivityWithApiKey(ctx, input)),
+    myActivities: protectedProcedure
+    .input(inputs.myActivitiesSchema)
+    .query(({ ctx }) => services.myActivities(ctx)),
 });

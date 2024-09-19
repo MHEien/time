@@ -49,3 +49,8 @@ export const createActivityWithApiKeySchema = createActivitySchema.extend({
   projectId: z.string().optional(),
 });
 export type CreateActivityWithApiKeyInput = z.infer<typeof createActivityWithApiKeySchema>;
+
+export const myActivitiesSchema = z.object({
+  page: z.number().int().default(1),
+  perPage: z.number().int().default(12),
+});

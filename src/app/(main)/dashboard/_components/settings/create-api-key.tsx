@@ -16,7 +16,7 @@ interface CreateApiKeyFormProps {
     }) => void;
 }
 
-export default function CreateApiKeyForm({ setOptimisticApiKeys }: CreateApiKeyFormProps) {
+export default function CreateApiKeyForm() {
   const [name, setName] = useState('')
   const router = useRouter()
   const [isCreatePending, startCreateTransaction] = useTransition();
@@ -30,25 +30,9 @@ export default function CreateApiKeyForm({ setOptimisticApiKeys }: CreateApiKeyF
                     name: name,
                 },
                 {
-                    onSettled: () => {
-                        setOptimisticApiKeys({
-                            action: "add",
-                            apiKey: {
-                                id: crypto.randomUUID(),
-                                name: name,
-                                key: "key",
-                                expiresAt: new Date(),
-                                lastUsedAt: new Date(),
-                            },
-                        });
-                    },
-                    onSuccess: ({ id }) => {
+                    onSuccess: () => {
                         toast.success("API Key created");
-                        router.refresh();
-                        // This is a workaround for a bug in navigation because of router.refresh()
-                        setTimeout(() => {
-                            router.push(`/dashboard/settings/api-keys`);
-                        }, 100);
+                        router.refresh()
                     },
                     onError: () => {
                         toast.error("Failed to create API key");
