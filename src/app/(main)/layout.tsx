@@ -5,7 +5,7 @@ import { Footer } from "./_components/footer";
 const MainLayout = ({ children }: { children: ReactNode }) => {
   return (
     <>
-      <Header />
+ 
       {children}
       <Footer />
     </>

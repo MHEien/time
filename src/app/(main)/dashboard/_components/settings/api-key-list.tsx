@@ -18,8 +18,10 @@ export default function ApiKeyList({ initialKeys }: ApiKeyListProps) {
   const apiKeyMutation = api.apiKey.delete.useMutation();
 
   const handleDelete = async (id: number) => {
-    await apiKeyMutation(id)
-    setKeys(keys.filter(key => key.id !== id))
+    apiKeyMutation.mutate({
+      id
+    })
+    setKeys(keys.filter(key => key.id !== id.toString()))
     router.refresh()
   }
 
@@ -42,7 +44,7 @@ export default function ApiKeyList({ initialKeys }: ApiKeyListProps) {
             <TableCell>{key.expiresAt ? new Date(key.expiresAt).toLocaleDateString() : 'Never'}</TableCell>
             <TableCell>{key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : 'Never'}</TableCell>
             <TableCell>
-              <Button variant="destructive" onClick={() => handleDelete(key.id)}>Delete</Button>
+              <Button variant="destructive" onClick={() => handleDelete(parseInt(key.id))}>Delete</Button>
             </TableCell>
           </TableRow>
         ))}

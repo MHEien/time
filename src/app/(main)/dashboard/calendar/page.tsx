@@ -1,13 +1,13 @@
 import CalendarComponent from "../_components/calendar";
-import GenerateSuggestion from "../_components/generate-suggestion";
+import { api } from '@/trpc/server';
 
-export default function CalendarPage() {
+export default async function CalendarPage() {
+
+  const initialEvents = await api.calendar.myEvents.query({}) 
+
+  const aiSuggestions = await api.aiSuggestions.myEvents.query({})
+
   return (
-    <div className="container mx-auto p-4 h-screen flex flex-col">
-      <GenerateSuggestion />
-      <h1 className="text-3xl font-bold mb-6">Calendar</h1>
-
-      <CalendarComponent />
-    </div>
+      <CalendarComponent initialEvents={initialEvents} initialAiSuggestions={aiSuggestions} />
   );
 }

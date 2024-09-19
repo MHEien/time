@@ -1,69 +1,235 @@
-# Next.js Auth Starter Template
+[<img src="LLM" align="left" width="60%" padding="20">]()
 
-## Motivation
+## &nbsp;&nbsp; TIME
 
-Implementing authentication in Next.js, especially Email+Password authentication, can be challenging. NextAuth intentionally limits email password functionality to discourage the use of passwords due to security risks and added complexity. However, in certain projects, clients may require user password authentication. Lucia offers a flexible alternative to NextAuth.js, providing more customization options without compromising on security. This template serves as a starting point for building a Next.js app with Lucia authentication.
+&nbsp;&nbsp;&nbsp;&nbsp; *<code>❯ WorkflowAI</code>*
 
-## Lucia vs. NextAuth.js
+<p align="left">&nbsp;&nbsp;
+	<!-- local repository, no metadata badges. --></p>
 
-Lucia is less opinionated than NextAuth, offering greater flexibility for customization. While Lucia involves more setup, it provides a higher degree of flexibility, making it a suitable choice for projects requiring unique authentication configurations.
+<br>
 
-## Key Features
+<details><summary>Table of Contents</summary>
 
-- **Authentication:** 💼 Support for Credential and OAuth authentication.
-- **Authorization:** 🔒 Easily manage public and protected routes within the `app directory`.
-- **Email Verification:** 📧 Verify user identities through email.
-- **Password Reset:** 🔑 Streamline password resets by sending email password reset links.
-- **Lucia + tRPC:** 🔄 Similar to NextAuth with tRPC, granting access to sessions and user information through tRPC procedures.
-- **E2E tests:** 🧪 Catch every issue before your users do with comprehensive E2E testing.
-- **Stripe Payment:** 💳 Setup user subscriptions seamlessly with stripe.
-- **Email template with react-email:** ✉️ Craft your email templates using React.
-- **PostgreSQL Database:** 🛢️ Utilize a PostgreSQL database set up using Drizzle for enhanced performance and type safety.
-- **Database Migration:** 🚀 Included migration script to extend the database schema according to your project needs.
+- [📍 Overview](#-overview)
+- [👾 Features](#-features)
+- [📂 Repository Structure](#-repository-structure)
+- [🧩 Modules](#-modules)
+- [🚀 Getting Started](#-getting-started)
+    - [🔖 Prerequisites](#-prerequisites)
+    - [📦 Installation](#-installation)
+    - [🤖 Usage](#-usage)
+    - [🧪 Tests](#-tests)
+- [📌 Project Roadmap](#-project-roadmap)
+- [🤝 Contributing](#-contributing)
+- [🎗 License](#-license)
+- [🙌 Acknowledgments](#-acknowledgments)
 
-## Tech Stack
+</details>
+<hr>
 
-- [Next.js](https://nextjs.org)
-- [Lucia](https://lucia-auth.com/)
-- [tRPC](https://trpc.io)
-- [Drizzle ORM](https://orm.drizzle.team/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [Stripe](https://stripe.com/)
-- [Tailwind CSS](https://tailwindcss.com)
-- [Shadcn UI](https://ui.shadcn.com/)
-- [React Hook Form](https://www.react-hook-form.com/)
-- [React Email](https://react.email/)
-- [Playwright](https://playwright.dev/)
+## 📍 Overview
 
-## Get Started
+TIME is a modern web application built with Next.js, TypeScript, and Tailwind CSS. It leverages the power of tRPC for type-safe API communication and Drizzle ORM for database interactions. This project aims to provide a robust and scalable foundation for building time management and workflow optimization tools.
 
-1. Clone this repository to your local machine.
-2. Copy `.env.example` to `.env` and fill in the required environment variables.
-3. Run `pnpm install` to install dependencies.
-4. `(for node v18 or lower):` Uncomment polyfills for `webCrypto` in `src/lib/auth/index.ts`
-5. Update app title, database prefix, and other parameters in the `src/lib/constants.ts` file.
-6. Run `pnpm db:push` to push your schema to the database.
-7. Execute `pnpm dev` to start the development server and enjoy!
+---
 
-## Testing
+## 👾 Features
 
-1. Install [Playwright](https://playwright.dev/) (use this command if you want to install chromium only `pnpm exec playwright install chromium --with-deps`)
-2. Build production files using `pnpm build`
-3. Run `pnpm test:e2e` (add --debug flag to open tests in browser in debug mode)
+- Next.js 14+ with App Router for efficient server-side rendering and routing
+- TypeScript for type safety and improved developer experience
+- Tailwind CSS for rapid and responsive UI development
+- tRPC for end-to-end typesafe APIs
+- Drizzle ORM for flexible and performant database operations
+- Playwright for end-to-end testing
+- GitHub Actions for continuous integration and deployment
+- Customizable components with shadcn/ui
 
-## Using Github actions
+---
 
-Add the following environment variables to your **github actions repository secrets** -
-`DATABASE_URL`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`
+## 📂 Repository Structure
 
-## Roadmap
+```sh
+└── time/
+    ├── .github
+    │   ├── ISSUE_TEMPLATE
+    │   ├── pull_request_template.md
+    │   └── workflows
+    ├── bun.lockb
+    ├── components.json
+    ├── drizzle
+    ├── drizzle.config.ts
+    ├── LICENSE
+    ├── next-env.d.ts
+    ├── next.config.js
+    ├── package.json
+    ├── playwright.config.ts
+    ├── pnpm-lock.yaml
+    ├── postcss.config.cjs
+    ├── prettier.config.js
+    ├── README.md
+    ├── src
+    │   ├── app
+    │   ├── components
+    │   ├── config
+    │   ├── env.js
+    │   ├── lib
+    │   ├── middleware.ts
+    │   ├── server
+    │   ├── styles
+    │   └── trpc
+    ├── tailwind.config.ts
+    ├── tests
+    │   └── e2e
+    └── tsconfig.json
+```
 
-- [ ] Update Password
-- [x] Stripe Integration
-<!-- - [x] API Rate-Limiting see branch - [upstash-ratelimiting](https://github.com/iamtouha/next-lucia-auth/tree/upstash-ratelimiting) -->
-- [ ] Admin Dashboard (under consideration)
-- [ ] Role-Based Access Policy (under consideration)
+---
 
-## Contributing
+## 🧩 Modules
 
-To contribute, fork the repository and create a feature branch. Test your changes, and if possible, open an issue for discussion before submitting a pull request. Follow project guidelines, and welcome feedback to ensure a smooth integration of your contributions. Your pull requests are warmly welcome.
+<details closed><summary>Root</summary>
+
+| File | Summary |
+| --- | --- |
+| [components.json](components.json) | Configuration file for UI components, likely used with shadcn/ui |
+| [drizzle.config.ts](drizzle.config.ts) | Configuration file for Drizzle ORM, defining database connection and schema location |
+| [next-env.d.ts](next-env.d.ts) | Type definitions for Next.js environment |
+| [next.config.js](next.config.js) | Configuration file for Next.js, customizing build and runtime behavior |
+| [package.json](package.json) | Project metadata and dependencies |
+| [playwright.config.ts](playwright.config.ts) | Configuration for Playwright e2e tests |
+| [postcss.config.cjs](postcss.config.cjs) | PostCSS configuration, likely for Tailwind CSS processing |
+| [prettier.config.js](prettier.config.js) | Configuration for Prettier code formatter |
+| [tailwind.config.ts](tailwind.config.ts) | Tailwind CSS configuration |
+| [tsconfig.json](tsconfig.json) | TypeScript compiler configuration |
+
+</details>
+
+<details closed><summary>src</summary>
+
+| File | Summary |
+| --- | --- |
+| [env.js](src/env.js) | Environment variable validation and typing |
+| [middleware.ts](src/middleware.ts) | Next.js middleware for request/response modifications |
+
+</details>
+
+---
+
+## 🚀 Getting Started
+
+### 🔖 Prerequisites
+
+- Node.js: `v14.0.0 or later`
+- pnpm: `v6.0.0 or later`
+
+### 📦 Installation
+
+1. Clone the TIME repository:
+```sh
+git clone https://github.com/YourUsername/time.git
+```
+
+2. Navigate to the project directory:
+```sh
+cd time
+```
+
+3. Install the required dependencies:
+```sh
+pnpm install
+```
+
+### 🤖 Usage
+
+To run the development server:
+
+```sh
+pnpm dev
+```
+
+To build the project for production:
+
+```sh
+pnpm build
+```
+
+To start the production server:
+
+```sh
+pnpm start
+```
+
+### 🧪 Tests
+
+Run e2e tests using Playwright:
+
+```sh
+pnpm test:e2e
+```
+
+---
+
+## 📌 Project Roadmap
+
+- [X] **`Initial Setup`**: Set up Next.js with TypeScript and Tailwind CSS
+- [X] **`Database Integration`**: Implement Drizzle ORM for database operations
+- [ ] **`API Development`**: Build out tRPC endpoints for core functionality
+- [ ] **`User Authentication`**: Implement secure user authentication and authorization
+- [ ] **`UI Components`**: Develop reusable UI components using shadcn/ui
+- [ ] **`E2E Testing`**: Create comprehensive e2e tests with Playwright
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Here are several ways you can contribute:
+
+- **[Report Issues](https://github.com/YourUsername/time/issues)**: Submit bugs found or log feature requests for the `TIME` project.
+- **[Submit Pull Requests](https://github.com/YourUsername/time/pulls)**: Review open PRs, and submit your own PRs.
+- **[Join the Discussions](https://github.com/YourUsername/time/discussions)**: Share your insights, provide feedback, or ask questions.
+
+<details closed>
+<summary>Contributing Guidelines</summary>
+
+1. **Fork the Repository**: Start by forking the project repository to your GitHub account.
+2. **Clone Locally**: Clone the forked repository to your local machine using a Git client.
+   ```sh
+   git clone https://github.com/YourUsername/time.git
+   ```
+3. **Create a New Branch**: Always work on a new branch, giving it a descriptive name.
+   ```sh
+   git checkout -b new-feature-x
+   ```
+4. **Make Your Changes**: Develop and test your changes locally.
+5. **Commit Your Changes**: Commit with a clear message describing your updates.
+   ```sh
+   git commit -m 'Implemented new feature x.'
+   ```
+6. **Push to GitHub**: Push the changes to your forked repository.
+   ```sh
+   git push origin new-feature-x
+   ```
+7. **Submit a Pull Request**: Create a PR against the original project repository. Clearly describe the changes and their motivations.
+
+Once your PR is reviewed and approved, it will be merged into the main branch. Congratulations on your contribution!
+</details>
+
+---
+
+## 🎗 License
+
+This project is protected under the [MIT](https://choosealicense.com/licenses/mit/) License. For more details, refer to the [LICENSE](LICENSE) file.
+
+---
+
+## 🙌 Acknowledgments
+
+- [Next.js](https://nextjs.org/) for the React framework
+- [Tailwind CSS](https://tailwindcss.com/) for the utility-first CSS framework
+- [tRPC](https://trpc.io/) for end-to-end typesafe APIs
+- [Drizzle ORM](https://orm.drizzle.team/) for the TypeScript ORM
+- [Playwright](https://playwright.dev/) for reliable end-to-end testing
+- [shadcn/ui](https://ui.shadcn.com/) for the beautiful and customizable UI components
+
+---

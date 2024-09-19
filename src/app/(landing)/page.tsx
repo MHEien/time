@@ -1,146 +1,213 @@
-import Link from "next/link";
-import { type Metadata } from "next";
-import { PlusIcon } from "@/components/icons";
+"use client";
+
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { GitHubLogoIcon } from "@radix-ui/react-icons";
-import { CopyToClipboard } from "./_components/copy-to-clipboard";
-import {
-  Drizzle,
-  LuciaAuth,
-  NextjsLight,
-  NextjsDark,
-  ReactJs,
-  ShadcnUi,
-  TRPC,
-  TailwindCss,
-  StripeLogo,
-  ReactEmail,
-} from "./_components/feature-icons";
-import CardSpotlight from "./_components/hover-card";
+import { Calendar, Clock, Layout, Zap, Menu } from "lucide-react";
+import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
+import { WavyBackground } from "@/components/ui/wavy-background";
+import { SparklesCore } from "@/components/ui/sparkles";
+import { AnimatedTooltip } from "@/components/ui/animated-tooltip";
+import { TypewriterEffect } from "@/components/ui/typewriter-effect";
+import { HoverEffect } from "@/components/ui/card-hover-effect";
+import { FloatingNav } from "@/components/ui/floating-navbar";
 
-export const metadata: Metadata = {
-  title: "Next.js Lucia Auth Starter Template",
-  description:
-    "A Next.js starter template with nextjs and Lucia auth. Includes drizzle, trpc, react-email, tailwindcss and shadcn-ui",
-};
-
-const githubUrl = "https://github.com/iamtouha/next-lucia-auth";
-
-const features = [
+const navItems = [
   {
-    name: "Next.js",
-    description: "The React Framework for Production",
-    logo: NextjsIcon,
+    name: "Home",
+    link: "#",
   },
   {
-    name: "React.js",
-    description: "Server and client components.",
-    logo: ReactJs,
+    name: "Features",
+    link: "#features",
   },
   {
-    name: "Authentication",
-    description: "Credential authentication with password reset and email validation",
-    logo: LuciaAuth,
+    name: "Pricing",
+    link: "#pricing",
   },
   {
-    name: "Database",
-    description: "Drizzle with postgres database",
-    logo: Drizzle,
-  },
-  {
-    name: "TypeSafe Backend",
-    description: "Preserve type safety from backend to frontend with tRPC",
-    logo: TRPC,
-  },
-  {
-    name: "Subscription",
-    description: "Subscription with stripe",
-    logo: StripeLogo,
-  },
-  {
-    name: "Tailwindcss",
-    description: "Simple and elegant UI components built with Tailwind CSS",
-    logo: TailwindCss,
-  },
-  {
-    name: "Shadcn UI",
-    description: "A set of beautifully designed UI components for React",
-    logo: ShadcnUi,
-  },
-  {
-    name: "React Email",
-    description: "Write emails in React with ease.",
-    logo: ReactEmail,
+    name: "Team",
+    link: "#team",
   },
 ];
 
-const HomePage = () => {
+const features = [
+  {
+    title: "AI-Powered Insights",
+    description: "Get intelligent suggestions to optimize your work schedule.",
+    icon: <Zap className="h-10 w-10 text-blue-500" />,
+    link: "#ai-insights"
+  },
+  {
+    title: "Smart Scheduling",
+    description: "Generate personalized work schedules based on your habits and goals.",
+    icon: <Calendar className="h-10 w-10 text-green-500" />,
+    link: "#smart-scheduling"
+  },
+  {
+    title: "Real-time Adaptation",
+    description: "Your AI assistant learns and adapts to your changing work patterns.",
+    icon: <Clock className="h-10 w-10 text-purple-500" />,
+    link: "#real-time-adaptation"
+  },
+  {
+    title: "Desktop Activity Tracking",
+    description: "Seamlessly monitor your application usage and work duration.",
+    icon: <Layout className="h-10 w-10 text-yellow-500" />,
+    link: "#activity-tracking"
+  },
+];
+
+const people = [
+  {
+    id: 1,
+    name: "Markus Heien",
+    designation: "Fullstack Developer",
+    image: "https://media.licdn.com/dms/image/v2/D4D03AQGF4GgnzQfEdA/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1693830979655?e=1732147200&v=beta&t=6bdxsxuYqrlYq2w6YLqWkzH3jsr-rCRjFv3gphum4fA",
+  }
+];
+
+export default function LandingPage() {
+  const [activeSection, setActiveSection] = useState("home");
+  const [showStaticNav, setShowStaticNav] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY) {
+        setShowStaticNav(false);
+      } else {
+        setShowStaticNav(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+
+  const navOpacity = Math.max(1 - scrollY / 200, 0);
+
   return (
-    <>
-      <section className="mx-auto grid min-h-[calc(100vh-300px)] max-w-5xl flex-col  items-center justify-center gap-4 py-10 text-center  md:py-12">
-        <div className="p-4">
-          <div className="mb-10 flex items-center justify-center gap-3">
-            <NextjsIcon className="h-[52px] w-[52px]" />
-            <PlusIcon className="h-8 w-8" />
-            <LuciaAuth className="h-14 w-14" />
-          </div>
-          <h1 className="text-balance bg-gradient-to-tr  from-black/70 via-black to-black/60 bg-clip-text text-center text-3xl font-bold text-transparent dark:from-zinc-400/10 dark:via-white/90 dark:to-white/20  sm:text-5xl md:text-6xl lg:text-7xl">
-            Next.js Lucia Auth Starter Template
-          </h1>
-          <p className="text-balance mb-10 mt-4 text-center text-muted-foreground md:text-lg lg:text-xl">
-            A Next.js Authentication starter template (password reset, email validation and oAuth).
-            Includes Lucia, Drizzle, tRPC, Stripe, tailwindcss, shadcn-ui and react-email.
-          </p>
-          <div className="mb-10">
-            <div className="mx-auto max-w-[430px]">
-              <CopyToClipboard text={"git clone " + githubUrl} />
+    <div className="min-h-screen bg-black text-white overflow-hidden">
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 transition-opacity duration-300"
+        style={{ opacity: navOpacity }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <a href="#" className="text-xl font-bold">
+                WorkflowAI
+              </a>
+            </div>
+            <div className="hidden md:block">
+              <div className="ml-10 flex items-baseline space-x-4">
+                {navItems.map((item) => (
+                  <a
+                    key={item.name}
+                    href={item.link}
+                    className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    {item.name}
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="flex justify-center gap-4">
-            <Button size="lg" variant="outline" asChild>
-              <a href={githubUrl}>
-                <GitHubLogoIcon className="mr-1 h-5 w-5" />
-                GitHub
-              </a>
-            </Button>
-            <Button size="lg" asChild>
-              <Link href="/login">Get Started</Link>
-            </Button>
-          </div>
         </div>
-      </section>
-      <section>
-        <div className="container mx-auto lg:max-w-screen-lg">
-          <h1 className="mb-4 text-center text-3xl font-bold md:text-4xl lg:text-5xl">
-            <a id="features"></a> Features
-          </h1>
-          <p className="text-balance mb-10 text-center text-muted-foreground md:text-lg lg:text-xl">
-            This starter template is a guide to help you get started with Next.js for large scale
-            applications. Feel free to add or remove features to suit your needs.
-          </p>
-          <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
-            {features.map((feature, i) => (
-              <CardSpotlight
-                key={i}
-                name={feature.name}
-                description={feature.description}
-                logo={<feature.logo className="h-12 w-12" />}
+      </nav>
+      <FloatingNav navItems={navItems} />
+
+      {/* Hero Section */}
+      <section id="home" className="relative h-screen flex items-center justify-center overflow-hidden">
+        <WavyBackground className="w-full h-full">
+          <div className="text-center z-10">
+            <TextGenerateEffect words="WorkflowAI" className="text-6xl font-extrabold mb-6" />
+            <div className="max-w-2xl mx-auto mb-8">
+              <TypewriterEffect
+                words={[
+                  { text: "Revolutionize", className: "text-blue-500" },
+                  { text: "Your", className: "text-blue-500" },
+                  { text: "Workday", className: "text-blue-500" },
+                  { text: "with", className: "text-blue-500" },
+                  { text: "AI", className: "text-blue-500" },
+                ]}
               />
-            ))}
+            </div>
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+              Start Free Trial
+            </Button>
+          </div>
+        </WavyBackground>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 px-4">
+        <h2 className="text-4xl font-bold text-center mb-12">Powerful Features</h2>
+        <HoverEffect items={features} />
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 px-4 relative">
+        <div className="absolute inset-0 w-full h-full">
+          <SparklesCore
+            id="tsparticlesfullpage"
+            background="transparent"
+            minSize={0.6}
+            maxSize={1.4}
+            particleDensity={100}
+            className="w-full h-full"
+            particleColor="#FFFFFF"
+          />
+        </div>
+        <div className="relative z-10">
+          <h2 className="text-4xl font-bold text-center mb-12">Choose Your Plan</h2>
+          <div className="flex flex-col md:flex-row justify-center items-center gap-8">
+            <div className="w-full max-w-sm bg-gray-800 rounded-lg p-8 backdrop-blur-sm bg-opacity-30">
+              <h3 className="text-2xl font-bold mb-4">Free Plan</h3>
+              <p className="text-3xl font-bold mb-4">$0 / month</p>
+              <ul className="space-y-2 mb-6">
+                <li>✓ Desktop activity tracking</li>
+                <li>✓ Basic insights</li>
+                <li>✓ 2 AI-generated schedules per month</li>
+              </ul>
+              <Button className="w-full">Get Started</Button>
+            </div>
+            <div className="w-full max-w-sm bg-blue-600 rounded-lg p-8 backdrop-blur-sm bg-opacity-30 relative">
+              <h3 className="text-2xl font-bold mb-4">Premium Plan</h3>
+              <p className="text-3xl font-bold mb-4">$19.99 / month</p>
+              <ul className="space-y-2 mb-6">
+                <li>✓ All Free Plan features</li>
+                <li>✓ Unlimited AI-generated schedules</li>
+                <li>✓ Advanced productivity insights</li>
+                <li>✓ Priority support</li>
+              </ul>
+              <Button className="w-full bg-white text-blue-600 hover:bg-gray-100">Subscribe Now</Button>
+            </div>
           </div>
         </div>
       </section>
-    </>
-  );
-};
 
-export default HomePage;
+      {/* Team Section */}
+      <section id="team" className="py-20 px-4">
+        <h2 className="text-4xl font-bold text-center mb-12">Meet Our Team</h2>
+        <div className="flex flex-wrap justify-center gap-10">
+          <AnimatedTooltip items={people} />
+        </div>
+      </section>
 
-function NextjsIcon({ className }: { className?: string }) {
-  return (
-    <>
-      <NextjsLight className={className + " dark:hidden"} />
-      <NextjsDark className={className + " hidden dark:block"} />
-    </>
+      {/* Call-to-Action Section */}
+      <section className="text-center py-20 px-4 bg-gradient-to-r from-blue-600 to-purple-600">
+        <h2 className="text-4xl font-bold mb-6">Ready to Transform Your Workday?</h2>
+        <p className="text-xl mb-8 max-w-2xl mx-auto">
+          Join thousands of professionals who have already optimized their work-life balance with WorkflowAI.
+        </p>
+        <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+          Start Your Free Trial
+        </Button>
+      </section>
+
+    </div>
   );
 }
