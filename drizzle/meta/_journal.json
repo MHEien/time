@@ -22,6 +22,13 @@
       "when": 1726672409634,
       "tag": "0002_icy_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1726742375021,
+      "tag": "0003_abandoned_skin",
+      "breakpoints": true
     }
   ]
 }
