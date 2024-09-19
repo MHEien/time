@@ -121,7 +121,7 @@ export const apiKeyProcedure = t.procedure.use(async ({ ctx, next }) => {
     },
   });
 
-  if (!apiKeyRecord || !apiKeyRecord.user) {
+  if (!apiKeyRecord?.user) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid API key" });
   }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns'
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react'
 import { Button } from "@/components/ui/button"
@@ -17,7 +17,6 @@ import { useRouter } from 'next/navigation'
 import { motion } from "framer-motion"
 import { BackgroundGradient } from "@/components/ui/background-gradient"
 import { HoverEffect } from "@/components/ui/card-hover-effect"
-import { SparklesCore } from "@/components/ui/sparkles"
 
 type CalendarEvent = RouterOutputs['calendar']['myEvents'][number]
 type AiSuggestion = RouterOutputs['aiSuggestions']['myEvents'][number]
@@ -124,7 +123,7 @@ export default function CalendarPage({ initialEvents, initialAiSuggestions }: { 
   const renderDays = () => {
     const dateFormat = "EEE"
     const days = []
-    let startDate = startOfWeek(currentMonth)
+    const startDate = startOfWeek(currentMonth)
     for (let i = 0; i < 7; i++) {
       days.push(
         <div key={i} className="text-center font-bold text-gray-500">
@@ -181,7 +180,7 @@ export default function CalendarPage({ initialEvents, initialAiSuggestions }: { 
               .map(suggestion => (
                 <motion.div 
                   key={suggestion.id} 
-                  className={`text-xs ${getPriorityColor(suggestion.priority || 1)} text-white p-1 mt-1 rounded`}
+                  className={`text-xs ${getPriorityColor(suggestion.priority ?? 1)} text-white p-1 mt-1 rounded`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
@@ -244,7 +243,7 @@ export default function CalendarPage({ initialEvents, initialAiSuggestions }: { 
                     </Label>
                     <Textarea
                       id="description"
-                      value={newEvent.description || ''}
+                      value={newEvent.description ?? ''}
                       onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                       className="col-span-3"
                     />
@@ -256,7 +255,7 @@ export default function CalendarPage({ initialEvents, initialAiSuggestions }: { 
                     <Input
                       id="startTime"
                       type="datetime-local"
-                      value={format(newEvent.startTime || new Date(), "yyyy-MM-dd'T'HH:mm")}
+                      value={format(newEvent.startTime ?? new Date(), "yyyy-MM-dd'T'HH:mm")}
                       onChange={(e) => setNewEvent({ ...newEvent, startTime: new Date(e.target.value) })}
                       className="col-span-3"
                     />
@@ -268,7 +267,7 @@ export default function CalendarPage({ initialEvents, initialAiSuggestions }: { 
                     <Input
                       id="endTime"
                       type="datetime-local"
-                      value={format(newEvent.endTime || new Date(), "yyyy-MM-dd'T'HH:mm")}
+                      value={format(newEvent.endTime ?? new Date(), "yyyy-MM-dd'T'HH:mm")}
                       onChange={(e) => setNewEvent({ ...newEvent, endTime: new Date(e.target.value) })}
                       className="col-span-3"
                     />
@@ -279,7 +278,7 @@ export default function CalendarPage({ initialEvents, initialAiSuggestions }: { 
                     </Label>
                     <Input
                       id="location"
-                      value={newEvent.location || ''}
+                      value={newEvent.location ?? ''}
                       onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
                       className="col-span-3"
                     />
@@ -305,7 +304,7 @@ export default function CalendarPage({ initialEvents, initialAiSuggestions }: { 
         <h2 className="text-2xl font-bold mb-4 text-white">AI Suggestions</h2>
         <HoverEffect items={aiSuggestions.map(suggestion => ({
           title: suggestion.title,
-          description: suggestion.description || '',
+          description: suggestion.description ?? '',
           link: '#'
         }))} />
       </div>

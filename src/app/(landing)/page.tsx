@@ -66,10 +66,12 @@ const people = [
   }
 ];
 
+
 export default function LandingPage() {
   const [activeSection, setActiveSection] = useState("home");
   const [showStaticNav, setShowStaticNav] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [navOpacity, setNavOpacity] = useState(1);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -80,13 +82,12 @@ export default function LandingPage() {
         setShowStaticNav(true);
       }
       setLastScrollY(currentScrollY);
+      setNavOpacity(Math.max(1 - currentScrollY / 200, 0));
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
-
-  const navOpacity = Math.max(1 - scrollY / 200, 0);
 
   return (
     <div className="min-h-screen bg-black text-white overflow-hidden">

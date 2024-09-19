@@ -116,3 +116,12 @@ export const createActivityWithApiKey = async (ctx: APIKeyTRPCContext, input: Cr
 
   return activity;
 };
+
+export const myActivities = async (ctx: ProtectedTRPCContext) => {
+  const fetchedActivities = await ctx.db.query.activities.findMany({
+    where: eq(activities.userId, ctx.user.id),
+    orderBy: (table, { desc }) => [desc(table.startTime)],
+  });
+
+  return fetchedActivities;
+};

@@ -1,4 +1,3 @@
-import { generateId } from "lucia";
 import type { ProtectedTRPCContext } from "../../trpc";
 import type {
   CreateCalendarEventInput,
@@ -36,7 +35,7 @@ export const getCalendarEvent = async (ctx: ProtectedTRPCContext, { id }: GetCal
 };
 
 export const createCalendarEvent = async (ctx: ProtectedTRPCContext, input: CreateCalendarEventInput) => {
-  const id = generateId(15);
+  const id = crypto.randomUUID();
 
   const [event] = await ctx.db.insert(calendarEvents).values({
     id,

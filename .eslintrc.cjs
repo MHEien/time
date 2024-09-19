@@ -11,8 +11,7 @@ const config = {
     "plugin:@typescript-eslint/stylistic-type-checked",
   ],
   rules: {
-    // These opinionated rules are enabled in stylistic-type-checked above.
-    // Feel free to reconfigure them to your own preference.
+    // Global rules for your project
     "@typescript-eslint/array-type": "off",
     "@typescript-eslint/consistent-type-definitions": "off",
     "@typescript-eslint/no-empty-interface": "off",
@@ -34,6 +33,24 @@ const config = {
     ],
   },
   ignorePatterns: ["*.js"],
+
+  // Override for the `@/components/ui` directory
+  overrides: [
+    {
+      files: ["src/components/ui/**/*"],
+      rules: {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unnecessary-type-assertion": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-floating-promises": "off",
+        "no-var": "off",
+        "prefer-const": "off",
+        "@typescript-eslint/prefer-nullish-coalescing": "off",
+      },
+    },
+  ],
 };
 
 module.exports = config;
