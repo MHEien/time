@@ -1,7 +1,7 @@
   'use client'
 
-  import { useState } from 'react'
-  import { format, startOfWeek, addDays, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths, startOfDay, endOfDay, addWeeks, subWeeks, subDays, isWithinInterval, addHours } from 'date-fns'
+  import { useMemo, useState } from 'react'
+  import { format, startOfWeek, addDays, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths, startOfDay, addWeeks, subWeeks, subDays, isWithinInterval, addHours } from 'date-fns'
   import { ChevronLeft, ChevronRight, Plus, ChevronDown, ChevronUp, X } from 'lucide-react'
   import { Button } from "@/components/ui/button"
   import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
@@ -15,7 +15,7 @@
   import type { RouterOutputs } from '@/trpc/shared'
   import { toast } from 'sonner'
   import { useRouter } from 'next/navigation'
-  import { AnimatePresence, motion, useAnimation } from "framer-motion"
+  import { AnimatePresence, motion } from "framer-motion"
   import { BackgroundGradient } from "@/components/ui/background-gradient"
   import { HoverEffect } from "@/components/ui/card-hover-effect"
   import { ScrollArea } from '@/components/ui/scroll-area'
@@ -31,7 +31,6 @@
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(new Date())
     const [events, setEvents] = useState<CalendarEvent[]>(initialEvents)
-    const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>(initialAiSuggestions)
     const [isAddEventOpen, setIsAddEventOpen] = useState(false)
     const [newEvent, setNewEvent] = useState<Partial<CalendarEvent>>({
       title: '',
@@ -44,13 +43,15 @@
     const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(true)
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
     const [selectedAgenda, setSelectedAgenda] = useState<CalendarEvent[]>([])
-    const [isDragging, setIsDragging] = useState(false)
     const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null)
     const [viewType, setViewType] = useState<ViewType>('month')
 
     const router = useRouter()
     const createdEvent = api.calendar.create.useMutation()
-    const dragControls = useAnimation()
+
+    const aiSuggestions = useMemo(() => {
+      return initialAiSuggestions.filter(suggestion => suggestion.status === 'pending')
+    }, [initialAiSuggestions])
 
     const onDateClick = (day: Date) => {
       setSelectedDate(day)
@@ -135,7 +136,6 @@
 
     const handleDragStart = (event: CalendarEvent) => {
       if (event.externalCalendarId) return
-      setIsDragging(true)
       setDraggedEvent(event)
     }
 
@@ -162,7 +162,6 @@
         }
 
         setEvents(events.map(e => e.id === updatedEvent.id ? updatedEvent : e))
-        setIsDragging(false)
         setDraggedEvent(null)
         toast.success("Event moved successfully")
       }
@@ -358,7 +357,6 @@
 
     const renderDayView = () => {
       const startOfDayDate = startOfDay(currentDate)
-      const endOfDayDate = endOfDay(currentDate)
       const hours = []
       for (let i = 0; i < 24; i++) {
         const hour = addHours(startOfDayDate, i)

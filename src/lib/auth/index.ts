@@ -30,7 +30,7 @@ export const lucia = new Lucia(adapter, {
   sessionCookie: {
     name: "session",
 
-    expires: false, // session cookies have very long lifespan (2 years)
+    expires: false,
     attributes: {
       secure: env.NODE_ENV === "production",
     },
@@ -44,9 +44,9 @@ export const discord = new Discord(
 );
 
 export const entraId = new MicrosoftEntraId(
-  env.MICROSOFT_ENTRA_ID_TENANT_ID as string,
-  env.MICROSOFT_ENTRA_ID_CLIENT_ID as string,
-  env.MICROSOFT_ENTRA_ID_CLIENT_SECRET as string,
+  env.MICROSOFT_ENTRA_ID_TENANT_ID!,
+  env.MICROSOFT_ENTRA_ID_CLIENT_ID!,
+  env.MICROSOFT_ENTRA_ID_CLIENT_SECRET!,
   absoluteUrl("/login/microsoft-entra-id/callback")
 );
 

@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isSameDay } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
@@ -29,7 +29,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents)
-  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>(initialAiSuggestions)
   const [isAddEventOpen, setIsAddEventOpen] = useState(false)
   const [newEvent, setNewEvent] = useState<NewEvent>({
     title: '',
@@ -42,9 +41,12 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(true)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [selectedAgenda, setSelectedAgenda] = useState<CalendarEvent[]>([])
-  const [isDragging, setIsDragging] = useState(false)
   const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null)
   const [viewType, setViewType] = useState<ViewType>('month')
+
+  const aiSuggestions = useMemo(() => {
+    return initialAiSuggestions.filter(suggestion => suggestion.status === 'pending')
+  }, [initialAiSuggestions])
 
   const router = useRouter()
   const createdEvent = api.calendar.create.useMutation()
@@ -161,7 +163,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
 
   const handleDragStart = (event: CalendarEvent) => {
     if (event.externalCalendarId) return
-    setIsDragging(true)
     setDraggedEvent(event)
   }
 
@@ -186,7 +187,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
       }
 
       setEvents(events.map(e => e.id === updatedEvent.id ? updatedEvent : e))
-      setIsDragging(false)
       setDraggedEvent(null)
       toast.success("Event moved successfully")
     }

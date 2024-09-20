@@ -3,7 +3,6 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import type { CalendarEvent } from '@/types/calendar'
 import { startOfWeek, endOfWeek, addDays, isSameDay } from 'date-fns'
-import { formatDate } from '@/lib/utils'
 import { getEventColor, getEventsForDay } from '@/lib/utils/event-utils'
 
 interface WeekViewProps {
@@ -27,7 +26,6 @@ const WeekView: React.FC<WeekViewProps> = ({
 }) => {
   const startDate = startOfWeek(currentDate)
   const endDate = endOfWeek(currentDate)
-  const dateFormat = "EEE d"
 
   const renderWeek = () => {
     const days = []

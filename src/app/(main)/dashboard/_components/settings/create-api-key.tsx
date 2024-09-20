@@ -7,19 +7,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { api } from '@/trpc/react'
 import { toast } from "sonner";
-import { RouterOutputs } from '@/trpc/shared'
 
-interface CreateApiKeyFormProps {
-    setOptimisticApiKeys: (action: {
-        action: "add" | "delete" | "update";
-        apiKey: RouterOutputs["apiKey"]["myApiKeys"][number];
-    }) => void;
-}
+
 
 export default function CreateApiKeyForm() {
   const [name, setName] = useState('')
   const router = useRouter()
-  const [isCreatePending, startCreateTransaction] = useTransition();
+  const [, startCreateTransaction] = useTransition();
 
     const apiKey = api.apiKey.create.useMutation();
 

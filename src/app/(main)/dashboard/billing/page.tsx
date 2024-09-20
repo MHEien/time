@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-
-import { ExclamationTriangleIcon } from "@/components/icons";
-
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { env } from "@/env";
 import { validateRequest } from "@/lib/auth/validate-request";
-import { APP_TITLE } from "@/lib/constants";
 import { api } from "@/trpc/server";
 import * as React from "react";
 import { Billing } from "./_components/billing";

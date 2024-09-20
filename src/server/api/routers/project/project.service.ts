@@ -8,7 +8,7 @@ import type {
   UpdateProjectInput,
   GetProjectActivitiesInput,
 } from "./project.input";
-import { projects, activities } from "@/server/db/schema";
+import { projects } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
 export const listProjects = async (ctx: ProtectedTRPCContext, input: ListProjectsInput) => {

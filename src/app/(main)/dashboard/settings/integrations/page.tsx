@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { env } from "@/env";
 import { validateRequest } from "@/lib/auth/validate-request";
 import { ApiKeys } from "../../_components/settings/api-keys";
-import SettingsPage from "../../_components/settings/_components/user-settings";
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),

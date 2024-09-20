@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Layout, Zap, Menu } from "lucide-react";
+import { Calendar, Clock, Layout, Zap } from "lucide-react";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { WavyBackground } from "@/components/ui/wavy-background";
 import { SparklesCore } from "@/components/ui/sparkles";
@@ -68,19 +68,12 @@ const people = [
 
 
 export default function LandingPage() {
-  const [activeSection, setActiveSection] = useState("home");
-  const [showStaticNav, setShowStaticNav] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [navOpacity, setNavOpacity] = useState(1);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY) {
-        setShowStaticNav(false);
-      } else {
-        setShowStaticNav(true);
-      }
       setLastScrollY(currentScrollY);
       setNavOpacity(Math.max(1 - currentScrollY / 200, 0));
     };

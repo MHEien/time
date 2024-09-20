@@ -1,4 +1,3 @@
-import { CodeIcon } from "@radix-ui/react-icons";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 

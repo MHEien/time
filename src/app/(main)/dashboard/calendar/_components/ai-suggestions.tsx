@@ -20,7 +20,6 @@ const AISuggestions: React.FC<AISuggestionsProps> = ({
   aiSuggestions,
   events,
   onSuggestionClick,
-  onSuggestionDrag
 }) => {
   const isSuggestionInCalendar = (suggestion: AiSuggestion) => {
     return events.some(event => event.title === suggestion.title)

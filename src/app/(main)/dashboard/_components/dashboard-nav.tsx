@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CalendarIcon, CreditCard, GearIcon, OpenInNewWindowIcon as IntegrationsIcon, PersonIcon as UserIcon, GlobeIcon, ChevronDownIcon } from "@/components/icons";
 import { usePathname, useRouter } from "next/navigation";
