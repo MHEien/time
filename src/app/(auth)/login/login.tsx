@@ -30,7 +30,7 @@ export function Login() {
           </Link>
         </Button>
         <Button variant="outline" className="w-full" asChild>
-          <Link href="/login/azure" prefetch={false}>
+          <Link href="/login/entra-id" prefetch={false}>
             <StitchesLogoIcon className="mr-2 h-5 w-5" />
             Log in with Azure
           </Link>

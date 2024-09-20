@@ -47,7 +47,7 @@ export const entraId = new MicrosoftEntraId(
   env.MICROSOFT_ENTRA_ID_TENANT_ID!,
   env.MICROSOFT_ENTRA_ID_CLIENT_ID!,
   env.MICROSOFT_ENTRA_ID_CLIENT_SECRET!,
-  absoluteUrl("/login/microsoft-entra-id/callback")
+  absoluteUrl("/login/entra-id/callback")
 );
 
 declare module "lucia" {

@@ -24,42 +24,41 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const tokens = await entraId.validateAuthorizationCode(code, storedCodeVerifier);
 
-    const azureUserRes = await fetch("https://graph.microsoft.com/oidc/userinfo", {
-        headers: {
-            Authorization: `Bearer ${tokens.accessToken}`
-        }
+    const entraIdUserRes = await fetch("https://graph.microsoft.com/oidc/userinfo", {
+      headers: {
+        Authorization: `Bearer ${tokens.accessToken}`
+      }
     });
 
-    console.log("User info response:", azureUserRes);
-    const azureUser = (await azureUserRes.json()) as DiscordUser;
-    
+    console.log("User info response:", entraIdUserRes);
+    const entraIdUser = await entraIdUserRes.json() as EntraIdUser;
 
-    if (!azureUser.email || !azureUser.verified) {
+    if (!entraIdUser.email) {
       return new Response(
         JSON.stringify({
-          error: "Your Discord account must have a verified email address.",
+          error: "Your Microsoft account must have an email address.",
         }),
         { status: 400, headers: { Location: Paths.Login } },
       );
     }
+
     const existingUser = await db.query.users.findFirst({
       where: (table, { eq, or }) =>
-        or(eq(table.providerId, azureUser.id), eq(table.email, azureUser.email!)),
+        or(eq(table.providerId, entraIdUser.sub), eq(table.email, entraIdUser.email)),
     });
 
-    const avatar = azureUser.avatar
-      ? `https://cdn.discordapp.com/avatars/${azureUser.id}/${azureUser.avatar}.webp`
-      : null;
+    const avatar = entraIdUser.picture ?? null;
 
     if (!existingUser) {
       const userId = generateId(21);
       await db.insert(users).values({
         id: userId,
-        email: azureUser.email,
+        email: entraIdUser.email,
         emailVerified: true,
-        providerId: azureUser.id,
+        providerId: entraIdUser.sub,
         provider: "entraId",
         avatar,
+        name: entraIdUser.name ?? null,
       });
       const session = await lucia.createSession(userId, {});
       const sessionCookie = lucia.createSessionCookie(session.id);
@@ -70,13 +69,14 @@ export async function GET(request: Request): Promise<Response> {
       });
     }
 
-    if (existingUser.providerId !== azureUser.id || existingUser.avatar !== avatar) {
+    if (existingUser.providerId !== entraIdUser.sub || existingUser.avatar !== avatar) {
       await db
         .update(users)
         .set({
-          providerId: azureUser.id,
+          providerId: entraIdUser.sub,
           emailVerified: true,
           avatar,
+          name: entraIdUser.name ?? existingUser.name,
         })
         .where(eq(users.id, existingUser.id));
     }
@@ -88,9 +88,7 @@ export async function GET(request: Request): Promise<Response> {
       headers: { Location: Paths.Dashboard },
     });
   } catch (e) {
-    // the specific error message depends on the provider
     if (e instanceof OAuth2RequestError) {
-      // invalid code
       return new Response(JSON.stringify({ message: "Invalid code" }), {
         status: 400,
       });
@@ -103,15 +101,9 @@ export async function GET(request: Request): Promise<Response> {
   }
 }
 
-interface DiscordUser {
-  id: string;
-  username: string;
-  avatar: string | null;
-  banner: string | null;
-  global_name: string | null;
-  banner_color: string | null;
-  mfa_enabled: boolean;
-  locale: string;
-  email: string | null;
-  verified: boolean;
+interface EntraIdUser {
+  sub: string;
+  name?: string;
+  email: string;
+  picture?: string;
 }
