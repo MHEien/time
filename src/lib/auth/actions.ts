@@ -99,6 +99,7 @@ export async function signup(_: any, formData: FormData): Promise<ActionResponse
   const hashedPassword = await new Scrypt().hash(password);
   await db.insert(users).values({
     id: userId,
+    provider: "email",
     email,
     hashedPassword,
   });

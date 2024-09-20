@@ -21,7 +21,6 @@ type Activity = typeof activities.$inferSelect;
 type WakatimeData = typeof wakatimeData.$inferSelect;
 
 interface LLMEvent {
-  id: string;
   userId: string;
   title: string;
   description: string;
@@ -43,8 +42,6 @@ interface WorkPattern {
   projectId?: string;
   frequency: number;
 }
-
-
 
 export const listAiSuggestedEvents = async (ctx: ProtectedTRPCContext, input: ListAiSuggestedEventsInput) => {
   return ctx.db.query.aiSuggestedEvents.findMany({
@@ -130,7 +127,7 @@ export const generateNextWeekEvents = async (ctx: ProtectedTRPCContext) => {
   // Fetch user settings
   const userSetting = await ctx.db.query.userSettings.findFirst({
     where: eq(userSettings.userId, ctx.user.id),
-  })?? {
+  }) ?? {
     userId: ctx.user.id,
     timeZone: 'UTC',
     workingHoursStart: '09:00',
@@ -179,108 +176,101 @@ export const generateNextWeekEvents = async (ctx: ProtectedTRPCContext) => {
   const nextWeekDates = getNextWeekDates(userSetting.weekStartDay as Day);
 
   // Prepare data for LLM
+  // Optimized LLM input by summarizing and limiting data size
   const llmInput = {
     userSettings: userSetting,
-    workPatterns,
-    projects: userProjects,
-    nextWeekDates,
+    workPatterns: workPatterns.slice(0, 10), // Limit to top 10 patterns
+    projects: userProjects.slice(0, 5), // Limit to top 5 projects
+    nextWeekDates: nextWeekDates.map(date => format(date, 'yyyy-MM-dd')),
     recentActivitiesSummary: summarizeRecentActivities(recentActivities),
     recentCodingSummary: summarizeRecentCoding(recentWakatimeData),
-};
-
+  };
 
   const prompt = `
-          You are an AI assistant tasked with generating a recommended calendar schedule for the upcoming week based on the given input. The input data is structured as follows:
+You are an AI assistant tasked with generating a recommended calendar schedule for the upcoming week based on the given input. The input data is structured as follows:
 
-          <todays_date> ${format(new Date(), 'yyyy-MM-dd')} </todays_date>
-          <todays_day_of_week> ${format(new Date(), 'EEEE')} </todays_day_of_week>
-  
-          <user_settings> ${JSON.stringify(llmInput.userSettings, null, 2)} </user_settings>
-  
-          Your task is to analyze this data and generate a list of suggested events for the user's calendar for the upcoming week. The output should be in JSON format, following the structure of the \`aiSuggestedEvents\` table schema provided.
-  
-          Follow these steps to generate the recommended schedule:
-  
-          1. Process the user settings:
-             - Note the user's time zone, working hours, and week start day.
-             - Consider the user's preferences for activity tracking and calendar sync.
-  
-          2. Analyze the work patterns:
-             - Identify recurring activities and their frequencies.
-             - Consider the day of the week, start time, and end time for each pattern.
-  
-          3. If there are any projects listed, incorporate them into the schedule:
-             - Allocate time for project-related tasks based on their priority and deadlines.
-  
-          4. Use the next week dates to structure your suggested events:
-             - Ensure that suggested events fall within these dates.
-             - Respect the user's working hours when scheduling events.
-  
-          5. Incorporate insights from the recent activities summary:
-             - Suggest events that align with the user's recent activity patterns.
-             - Allocate time for frequently used applications or activities.
-  
-          6. If the recent coding summary contains data, use it to suggest coding-related events:
-             - Schedule coding sessions based on the user's recent coding activity.
-  
-          7. Generate suggested events based on the analyzed data:
-             - Create a mix of work-related, project-related, and personal productivity events.
-             - Ensure a balanced schedule that includes breaks and time for focused work.
-  
-          8. For each suggested event, provide the following information:
-             - A unique ID (you can use a placeholder like "GENERATED_ID_1" for this exercise)
-             - The user ID from the input data
-             - A descriptive title
-             - A brief description of the event's purpose
-             - Suggested start and end times (in ISO 8601 format with timezone)
-             - A priority level (1-5, with 1 being highest priority)
-             - Related activity or project ID (if applicable)
-             - Status (set to "pending" for all suggested events)
-  
-          9. Format your output as a JSON array of objects, where each object represents a suggested event and follows the structure of the \`aiSuggestedEvents\` table schema.
-  
-          Here's an example of how a single suggested event should be formatted in your output:
-  
-          {
-            "id": "GENERATED_ID_1",
-            "userId": "tq9sforzmm5jkc1nguii5",
-            "title": "Focus Work Session",
-            "description": "Dedicated time for uninterrupted work on high-priority tasks",
-            "suggestedStartTime": "2024-09-23T10:00:00-04:00",
-            "suggestedEndTime": "2024-09-23T12:00:00-04:00",
-            "priority": 2,
-            "relatedActivityId": null,
-            "relatedProjectId": null,
-            "status": "pending",
-            "createdAt": "2023-05-15T12:00:00Z",
-            "updatedAt": null
-          }
-  
-          Provide your complete list of suggested events as a JSON array, ensuring that all required fields are included for each event. The "createdAt" field should be set to the current date and time, and the "updatedAt" field should be null for new suggestions.
-          It is essential that your response is a a valid JSON array of objects, and contain no other text or code.
-        `
+<todays_date> ${format(new Date(), 'yyyy-MM-dd')} </todays_date>
+<todays_day_of_week> ${format(new Date(), 'EEEE')} </todays_day_of_week>
 
-        console.log("LLM prompt:", prompt);
+<user_settings> ${JSON.stringify(llmInput.userSettings, null, 2)} </user_settings>
 
-  // TODO: Send llmInput to LLM service and process the response
+Your task is to analyze this data and generate a list of suggested events for the user's calendar for the upcoming week. The output should be in JSON format, following the structure of the \`aiSuggestedEvents\` table schema provided.
+
+Follow these steps to generate the recommended schedule:
+
+1. Process the user settings:
+   - Note the user's time zone, working hours, and week start day.
+   - Consider the user's preferences for activity tracking and calendar sync.
+
+2. Analyze the work patterns:
+   - Identify recurring activities and their frequencies.
+   - Consider the day of the week, start time, and end time for each pattern.
+
+3. If there are any projects listed, incorporate them into the schedule:
+   - Allocate time for project-related tasks based on their priority and deadlines.
+
+4. Use the next week dates to structure your suggested events:
+   - Ensure that suggested events fall within these dates.
+   - Respect the user's working hours when scheduling events.
+
+5. Incorporate insights from the recent activities summary:
+   - Suggest events that align with the user's recent activity patterns.
+   - Allocate time for frequently used applications or activities.
+
+6. If the recent coding summary contains data, use it to suggest coding-related events:
+   - Schedule coding sessions based on the user's recent coding activity.
+
+7. Generate suggested events based on the analyzed data:
+   - Create a balanced schedule that includes breaks and time for focused work.
+   - Ensure that events do not overlap and adhere to the user's working hours.
+
+8. For each suggested event, provide the following information:
+   - The user ID from the input data
+   - A descriptive title
+   - A brief description of the event's purpose
+   - Suggested start and end times (in ISO 8601 format with timezone)
+   - A priority level (1-5, with 1 being highest priority)
+   - Related activity or project ID (if applicable)
+   - Status (set to "pending" for all suggested events)
+
+9. Format your output as a JSON array of objects, where each object represents a suggested event and follows the structure of the \`aiSuggestedEvents\` table schema.
+
+Additional instructions:
+
+- Ensure there is at least a 15-minute break between events.
+- The maximum duration of any single event should not exceed 3 hours.
+- Avoid scheduling events outside the user's working hours.
+- The schedule should be realistic and considerate of the user's well-being.
+
+It is essential that your response is a valid JSON array of objects, and contain no other text or code.
+`;
+
+  console.log("LLM prompt:", prompt);
+
+  // Send llmInput to LLM service and process the response
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4",
     messages: [
       {
         role: "system",
         content: prompt,
-      }
-    ]
+      },
+      {
+        role: "user",
+        content: JSON.stringify(llmInput),
+      },
+    ],
+    temperature: 0.7,
   });
-  
+
   console.log("LLM output:", completion?.choices[0]?.message?.content);
-  
+
   // Sanitize the LLM output by removing possible ```json or ``` wrapping
   let rawOutput = completion?.choices[0]?.message?.content ?? "[]";
   rawOutput = rawOutput.trim().replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '');
-  
+
   console.log("Sanitized output:", rawOutput);
-  
+
   // Try parsing the sanitized output
   let output;
   try {
@@ -292,166 +282,195 @@ export const generateNextWeekEvents = async (ctx: ProtectedTRPCContext) => {
       throw new Error("An unknown error occurred during JSON parsing");
     }
   }
-  
+
   // Validate the parsed output
   if (!output || !Array.isArray(output)) {
     throw new Error("LLM output is empty or invalid");
   }
-  
-  // Insert the events into the database
-  const insertedEvents = await Promise.all(
-    output.map(async (event: LLMEvent) => {
-      return ctx.db.insert(aiSuggestedEvents).values({
-        id: event.id,
-        userId: ctx.user.id,
-        title: event.title,
-        description: event.description,
-        suggestedStartTime: new Date(event.suggestedStartTime),
-        suggestedEndTime: new Date(event.suggestedEndTime),
-        priority: event.priority,
-        relatedActivityId: event.relatedActivityId,
-        relatedProjectId: event.relatedProjectId,
-        status: event.status ?? "pending",
-        createdAt: new Date(),
-        updatedAt: null,
-      });
-    })
-  );
-  
+
+  // Validate each event
+  const validatedEvents = output.filter(validateLLMEvent);
+
+  if (validatedEvents.length === 0) {
+    throw new Error("No valid events found in LLM output");
+  }
+
+  // Insert the events into the database using bulk insert
+  const eventValues = validatedEvents.map((event: LLMEvent) => ({
+    id: crypto.randomUUID(),
+    userId: ctx.user.id,
+    title: event.title,
+    description: event.description,
+    suggestedStartTime: new Date(event.suggestedStartTime),
+    suggestedEndTime: new Date(event.suggestedEndTime),
+    priority: event.priority,
+    relatedActivityId: event.relatedActivityId,
+    relatedProjectId: event.relatedProjectId,
+    status: event.status ?? "pending",
+    createdAt: new Date(),
+    updatedAt: null,
+  }));
+
+  const insertedEvents = await ctx.db.insert(aiSuggestedEvents).values(eventValues).returning();
+
   console.log("Inserted events:", insertedEvents);
-  
+
   return insertedEvents;
-}  
+};
+
+// Validation function for LLMEvent
+function validateLLMEvent(event: LLMEvent): boolean {
+  if (!event.userId || !event.title || !event.suggestedStartTime || !event.suggestedEndTime) {
+    return false;
+  }
+  // Additional validation can be added here
+  return true;
+}
 
 function summarizeRecentActivities(activities: Activity[]): Record<string, number> {
-  return activities.reduce((acc, activity) => {
+  // Aggregate data to reduce size
+  const activityCounts = activities.reduce((acc, activity) => {
     acc[activity.activityType] = (acc[activity.activityType] ?? 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  // Return top 5 activities
+  const sortedActivities = Object.entries(activityCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  return Object.fromEntries(sortedActivities);
 }
 
 function summarizeRecentCoding(wakatimeData: WakatimeData[]): Record<string, number> {
-  return wakatimeData.reduce((acc, entry) => {
-    // Ensure language is a string
+  // Aggregate data to reduce size
+  const codingCounts = wakatimeData.reduce((acc, entry) => {
     const language = typeof entry.language === 'string' ? entry.language : 'unknown';
-
-    // Ensure duration is a number
     const duration = typeof entry.duration === 'number' ? entry.duration : 0;
-
-    // Safely add the duration to the accumulator
     acc[language] = (acc[language] ?? 0) + duration;
-
     return acc;
   }, {} as Record<string, number>);
+
+  // Return top 5 languages
+  const sortedCoding = Object.entries(codingCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  return Object.fromEntries(sortedCoding);
 }
 
-
-
 function analyzeActivityPatterns(activities: Activity[], userSettings: UserSettings): WorkPattern[] {
-  console.log("activities", activities);
-    const patterns: Record<string, WorkPattern> = {};
-  
-    activities.forEach(activity => {
-        const zonedStartTime = toZonedTime(activity.startTime, userSettings?.timeZone ?? 'UTC');
-      const dayOfWeek = zonedStartTime.getDay();
-      const startTime = format(zonedStartTime, 'HH:mm');
-      const endTime = activity.endTime ? format(toZonedTime(activity.endTime, userSettings?.timeZone ?? 'UTC'), 'HH:mm') : startTime;
+  const patterns: Record<string, WorkPattern> = {};
 
-  
-      const key = `${dayOfWeek}-${startTime}-${activity.activityType}-${activity.projectId ?? 'noProject'}`;
-  
-      if (!patterns[key]) {
-        patterns[key] = {
-          dayOfWeek,
-          startTime,
-          endTime,
-          activityType: activity.activityType,
-          projectId: activity.projectId ?? undefined,
-          frequency: 1,
-        };
-      } else {
-        patterns[key].frequency += 1;
-        // Update end time if this activity ended later
-        if (endTime > patterns[key].endTime) {
-          patterns[key].endTime = endTime;
-        }
+  activities.forEach(activity => {
+    const zonedStartTime = toZonedTime(activity.startTime, userSettings?.timeZone ?? 'UTC');
+    const dayOfWeek = zonedStartTime.getDay();
+    const startTime = format(zonedStartTime, 'HH:mm');
+    const endTime = activity.endTime ? format(toZonedTime(activity.endTime, userSettings?.timeZone ?? 'UTC'), 'HH:mm') : startTime;
+
+    // Normalize times to 15-minute intervals
+    const normalizedStartTime = normalizeTime(startTime);
+    const normalizedEndTime = normalizeTime(endTime);
+
+    const key = `${dayOfWeek}-${normalizedStartTime}-${activity.activityType}-${activity.projectId ?? 'noProject'}`;
+
+    if (!patterns[key]) {
+      patterns[key] = {
+        dayOfWeek,
+        startTime: normalizedStartTime,
+        endTime: normalizedEndTime,
+        activityType: activity.activityType,
+        projectId: activity.projectId ?? undefined,
+        frequency: 1,
+      };
+    } else {
+      patterns[key].frequency += 1;
+      // Update end time if this activity ended later
+      if (normalizedEndTime > patterns[key].endTime) {
+        patterns[key].endTime = normalizedEndTime;
       }
-    });
-  
-    return Object.values(patterns).sort((a, b) => b.frequency - a.frequency);
-  }
-  
-  function analyzeCodingPatterns(wakatimeData: WakatimeData[], userSettings: UserSettings): WorkPattern[] {
-    const patterns: Record<string, WorkPattern> = {};
-  
-    wakatimeData.forEach(data => {
-        const zonedTime = toZonedTime(data.recordedAt, userSettings?.timeZone ?? 'UTC');
-      const dayOfWeek = zonedTime.getDay();
-      const time = format(zonedTime, 'HH:mm');
-  
-      const key = `${dayOfWeek}-${time}-${data.projectId ?? 'noProject'}`;
-  
-      if (!patterns[key]) {
-        patterns[key] = {
-          dayOfWeek,
-          startTime: time,
-          endTime: time, // We'll adjust this later
-          activityType: 'coding',
-          projectId: data.projectId ?? undefined,
-          frequency: 1,
-        };
-      } else {
-        patterns[key].frequency += 1;
-    
-        patterns[key].endTime = format(addDays(parse(time, 'HH:mm', new Date()), 1), 'HH:mm');
-      }
-    });
-  
-    return Object.values(patterns).sort((a, b) => b.frequency - a.frequency);
-  }
-  
-  function getNextWeekDates(weekStartDay: Day): Date[] {
-    const today = new Date();
-    const nextWeekStart = startOfWeek(addDays(today, 7), { weekStartsOn: weekStartDay });
-    return Array.from({ length: 7 }, (_, i) => addDays(nextWeekStart, i));
-  }
-  
+    }
+  });
 
+  return Object.values(patterns).sort((a, b) => b.frequency - a.frequency);
+}
 
-  function combineInsights(activityPatterns: WorkPattern[], codingPatterns: WorkPattern[]): WorkPattern[] {
-    const combinedPatterns = [...activityPatterns, ...codingPatterns];
-    
+function analyzeCodingPatterns(wakatimeData: WakatimeData[], userSettings: UserSettings): WorkPattern[] {
+  const patterns: Record<string, WorkPattern> = {};
 
-    const mergedPatterns = combinedPatterns.reduce((acc, pattern) => {
-      const existingPattern = acc.find(p => 
-        p.dayOfWeek === pattern.dayOfWeek &&
-        p.startTime <= pattern.endTime &&
-        p.endTime >= pattern.startTime
+  wakatimeData.forEach(data => {
+    const zonedTime = toZonedTime(data.recordedAt, userSettings?.timeZone ?? 'UTC');
+    const dayOfWeek = zonedTime.getDay();
+    const time = format(zonedTime, 'HH:mm');
+
+    // Normalize times to 15-minute intervals
+    const normalizedTime = normalizeTime(time);
+
+    const key = `${dayOfWeek}-${normalizedTime}-${data.projectId ?? 'noProject'}`;
+
+    if (!patterns[key]) {
+      patterns[key] = {
+        dayOfWeek,
+        startTime: normalizedTime,
+        endTime: normalizedTime, // We'll adjust this later
+        activityType: 'coding',
+        projectId: data.projectId ?? undefined,
+        frequency: 1,
+      };
+    } else {
+      patterns[key].frequency += 1;
+      patterns[key].endTime = normalizedTime;
+    }
+  });
+
+  return Object.values(patterns).sort((a, b) => b.frequency - a.frequency);
+}
+
+function normalizeTime(timeStr: string): string {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  if (!minutes) return '00:00';
+  const normalizedMinutes = Math.floor(minutes / 15) * 15;
+  return `${String(hours).padStart(2, '0')}:${String(normalizedMinutes).padStart(2, '0')}`;
+}
+
+function getNextWeekDates(weekStartDay: Day): Date[] {
+  const today = new Date();
+  const nextWeekStart = startOfWeek(addDays(today, 7), { weekStartsOn: weekStartDay });
+  return Array.from({ length: 7 }, (_, i) => addDays(nextWeekStart, i));
+}
+
+function combineInsights(activityPatterns: WorkPattern[], codingPatterns: WorkPattern[]): WorkPattern[] {
+  const combinedPatterns = [...activityPatterns, ...codingPatterns];
+
+  const mergedPatterns = combinedPatterns.reduce((acc, pattern) => {
+    const existingPattern = acc.find(p =>
+      p.dayOfWeek === pattern.dayOfWeek &&
+      p.startTime <= pattern.endTime &&
+      p.endTime >= pattern.startTime
+    );
+
+    if (existingPattern) {
+      existingPattern.startTime = format(
+        min([
+          parse(existingPattern.startTime, 'HH:mm', new Date()),
+          parse(pattern.startTime, 'HH:mm', new Date()),
+        ]),
+        'HH:mm'
       );
-  
-      if (existingPattern) {
-        existingPattern.startTime = format(
-          min([
-            parse(existingPattern.startTime, 'HH:mm', new Date()),
-            parse(pattern.startTime, 'HH:mm', new Date())
-          ]),
-          'HH:mm'
-        );
-        existingPattern.endTime = format(
-          max([
-            parse(existingPattern.endTime, 'HH:mm', new Date()),
-            parse(pattern.endTime, 'HH:mm', new Date())
-          ]),
-          'HH:mm'
-        );
-        existingPattern.frequency += pattern.frequency;
-      } else {
-        acc.push(pattern);
-      }
-  
-      return acc;
-    }, [] as WorkPattern[]);
-  
-    return mergedPatterns.sort((a, b) => b.frequency - a.frequency);
-  }
-  
+      existingPattern.endTime = format(
+        max([
+          parse(existingPattern.endTime, 'HH:mm', new Date()),
+          parse(pattern.endTime, 'HH:mm', new Date()),
+        ]),
+        'HH:mm'
+      );
+      existingPattern.frequency += pattern.frequency;
+    } else {
+      acc.push(pattern);
+    }
+
+    return acc;
+  }, [] as WorkPattern[]);
+
+  return mergedPatterns.sort((a, b) => b.frequency - a.frequency);
+}

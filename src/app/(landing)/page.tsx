@@ -123,7 +123,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section id="home" className="relative h-screen flex items-center justify-center overflow-hidden">
         <WavyBackground className="w-full h-full">
-          <div className="text-center z-10">
+          <div className="text-center z-10 flex flex-col items-center justify-center h-full">
             <TextGenerateEffect words="WorkflowAI" className="text-6xl font-extrabold mb-6" />
             <div className="max-w-2xl mx-auto mb-8">
               <TypewriterEffect

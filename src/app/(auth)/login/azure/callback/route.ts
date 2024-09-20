@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { generateId } from "lucia";
 import { OAuth2RequestError } from "arctic";
 import { eq } from "drizzle-orm";
-import { discord, lucia } from "@/lib/auth";
+import { entraId, lucia } from "@/lib/auth";
 import { db } from "@/server/db";
 import { Paths } from "@/lib/constants";
 import { users } from "@/server/db/schema";
@@ -11,9 +11,10 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const storedState = cookies().get("discord_oauth_state")?.value ?? null;
+  const storedState = cookies().get("entra_id_oauth_state")?.value ?? null;
+  const storedCodeVerifier = cookies().get("entra_id_oauth_code_verifier")?.value ?? null;
 
-  if (!code || !state || !storedState || state !== storedState) {
+  if (!code || !state || !storedState || !storedCodeVerifier || state !== storedState) {
     return new Response(null, {
       status: 400,
       headers: { Location: Paths.Login },
@@ -21,16 +22,19 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   try {
-    const tokens = await discord.validateAuthorizationCode(code);
+    const tokens = await entraId.validateAuthorizationCode(code, storedCodeVerifier);
 
-    const discordUserRes = await fetch("https://discord.com/api/users/@me", {
-      headers: {
-        Authorization: `Bearer ${tokens.accessToken}`,
-      },
+    const azureUserRes = await fetch("https://graph.microsoft.com/oidc/userinfo", {
+        headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
+        }
     });
-    const discordUser = (await discordUserRes.json()) as DiscordUser;
 
-    if (!discordUser.email || !discordUser.verified) {
+    console.log("User info response:", azureUserRes);
+    const azureUser = (await azureUserRes.json()) as DiscordUser;
+    
+
+    if (!azureUser.email || !azureUser.verified) {
       return new Response(
         JSON.stringify({
           error: "Your Discord account must have a verified email address.",
@@ -40,21 +44,21 @@ export async function GET(request: Request): Promise<Response> {
     }
     const existingUser = await db.query.users.findFirst({
       where: (table, { eq, or }) =>
-        or(eq(table.providerId, discordUser.id), eq(table.email, discordUser.email!)),
+        or(eq(table.providerId, azureUser.id), eq(table.email, azureUser.email!)),
     });
 
-    const avatar = discordUser.avatar
-      ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.webp`
+    const avatar = azureUser.avatar
+      ? `https://cdn.discordapp.com/avatars/${azureUser.id}/${azureUser.avatar}.webp`
       : null;
 
     if (!existingUser) {
       const userId = generateId(21);
       await db.insert(users).values({
         id: userId,
-        email: discordUser.email,
+        email: azureUser.email,
         emailVerified: true,
-        providerId: discordUser.id,
-        provider: "discord",
+        providerId: azureUser.id,
+        provider: "entraId",
         avatar,
       });
       const session = await lucia.createSession(userId, {});
@@ -66,11 +70,11 @@ export async function GET(request: Request): Promise<Response> {
       });
     }
 
-    if (existingUser.providerId !== discordUser.id || existingUser.avatar !== avatar) {
+    if (existingUser.providerId !== azureUser.id || existingUser.avatar !== avatar) {
       await db
         .update(users)
         .set({
-          providerId: discordUser.id,
+          providerId: azureUser.id,
           emailVerified: true,
           avatar,
         })
