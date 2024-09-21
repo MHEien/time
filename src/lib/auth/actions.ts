@@ -123,6 +123,8 @@ export async function logout(): Promise<{ error: string } | void> {
   await lucia.invalidateSession(session.id);
   const sessionCookie = lucia.createBlankSessionCookie();
   cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+  cookies().delete("entra_id_oauth_state");
+  cookies().delete("entra_id_oauth_code_verifier");
   return redirect("/");
 }
 

@@ -4,7 +4,7 @@ import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isS
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight} from 'lucide-react'
+import { ChevronLeft, ChevronRight, RefreshCcw } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -19,7 +19,8 @@ import DayView from './day-view'
 import EventModal from './event-modal'
 import AgendaView from './agenda-view'
 import AISuggestions from './ai-suggestions'
-
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { syncOutlookCalendar } from '../../actions'
 interface CalendarPageProps {
   initialEvents: CalendarEvent[]
   initialAiSuggestions: AiSuggestion[]
@@ -44,12 +45,15 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
   const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null)
   const [viewType, setViewType] = useState<ViewType>('month')
 
+  const router = useRouter();
+
   const aiSuggestions = useMemo(() => {
     return initialAiSuggestions.filter(suggestion => suggestion.status === 'pending')
   }, [initialAiSuggestions])
 
-  const router = useRouter()
   const createdEvent = api.calendar.create.useMutation()
+
+
 
   const onDateClick = (day: Date) => {
     setSelectedDate(day)
@@ -209,9 +213,28 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
         <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-emerald-500">
           {format(currentDate, dateFormat)}
         </span>
-        <Button variant="outline" size="icon" onClick={nextPeriod}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" size="icon" onClick={nextPeriod}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon">
+                <RefreshCcw className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => syncOutlookCalendar().then(() => router.refresh())}>
+                Sync with Outlook
+              </DropdownMenuItem>
+              {/*
+              <DropdownMenuItem onClick={() => handleSync('google')}>
+                Sync with Google Calendar
+              </DropdownMenuItem>
+              */}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </motion.div>
     )
   }

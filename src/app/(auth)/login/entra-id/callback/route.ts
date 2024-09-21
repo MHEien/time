@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { entraId, lucia } from "@/lib/auth";
 import { db } from "@/server/db";
 import { Paths } from "@/lib/constants";
-import { users } from "@/server/db/schema";
+import { users, integrationTokens } from "@/server/db/schema";
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -23,17 +23,32 @@ export async function GET(request: Request): Promise<Response> {
 
   try {
     const tokens = await entraId.validateAuthorizationCode(code, storedCodeVerifier);
+    console.log("Tokens:", tokens);
 
-    const entraIdUserRes = await fetch("https://graph.microsoft.com/oidc/userinfo", {
+    if (!tokens.accessToken) {
+      return new Response(JSON.stringify({ message: "Invalid code" }), {
+        status: 400,
+      });
+    }
+    const entraIdUserRes = await fetch("https://graph.microsoft.com/v1.0/me", {
       headers: {
         Authorization: `Bearer ${tokens.accessToken}`
       }
     });
-
-    console.log("User info response:", entraIdUserRes);
+    
+    if (!entraIdUserRes.ok) {
+      const errorBody = await entraIdUserRes.text();
+      console.error("Graph API Error:", entraIdUserRes.status, errorBody);
+      return new Response(JSON.stringify({ error: "Failed to fetch user info" }), {
+        status: 500,
+        headers: { Location: Paths.Login }
+      });
+    }
+    
     const entraIdUser = await entraIdUserRes.json() as EntraIdUser;
 
-    if (!entraIdUser.email) {
+
+    if (!entraIdUser.mail) {
       return new Response(
         JSON.stringify({
           error: "Your Microsoft account must have an email address.",
@@ -44,22 +59,31 @@ export async function GET(request: Request): Promise<Response> {
 
     const existingUser = await db.query.users.findFirst({
       where: (table, { eq, or }) =>
-        or(eq(table.providerId, entraIdUser.sub), eq(table.email, entraIdUser.email)),
+        or(eq(table.providerId, entraIdUser.id), eq(table.email, entraIdUser.mail)),
     });
 
-    const avatar = entraIdUser.picture ?? null;
-
+    const avatar = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value')
     if (!existingUser) {
       const userId = generateId(21);
       await db.insert(users).values({
         id: userId,
-        email: entraIdUser.email,
+        email: entraIdUser.mail,
         emailVerified: true,
-        providerId: entraIdUser.sub,
+        providerId: entraIdUser.id,
         provider: "entraId",
-        avatar,
-        name: entraIdUser.name ?? null,
+        avatar: avatar.url,
+        name: entraIdUser.displayName ?? null,
       });
+
+      await db.insert(integrationTokens).values({
+        id: generateId(15),
+        userId: userId,
+        integrationType: "entraId",
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt: new Date(tokens.accessTokenExpiresAt),
+      });
+
       const session = await lucia.createSession(userId, {});
       const sessionCookie = lucia.createSessionCookie(session.id);
       cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
@@ -69,17 +93,36 @@ export async function GET(request: Request): Promise<Response> {
       });
     }
 
-    if (existingUser.providerId !== entraIdUser.sub || existingUser.avatar !== avatar) {
-      await db
-        .update(users)
-        .set({
-          providerId: entraIdUser.sub,
-          emailVerified: true,
-          avatar,
-          name: entraIdUser.name ?? existingUser.name,
-        })
-        .where(eq(users.id, existingUser.id));
-    }
+    await db
+      .update(users)
+      .set({
+        providerId: entraIdUser.id,
+        emailVerified: true,
+        avatar: avatar.url,
+        name: entraIdUser.displayName ?? existingUser.name,
+      })
+      .where(eq(users.id, existingUser.id));
+
+    await db
+      .insert(integrationTokens)
+      .values({
+        id: generateId(15),
+        userId: existingUser.id,
+        integrationType: "entraId",
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt: new Date(tokens.accessTokenExpiresAt),
+      })
+      .onConflictDoUpdate({
+        target: [integrationTokens.userId, integrationTokens.integrationType],
+        set: {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          expiresAt: new Date(tokens.accessTokenExpiresAt),
+          updatedAt: new Date(),
+        },
+      });
+
     const session = await lucia.createSession(existingUser.id, {});
     const sessionCookie = lucia.createSessionCookie(session.id);
     cookies().set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
@@ -102,8 +145,8 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 interface EntraIdUser {
-  sub: string;
-  name?: string;
-  email: string;
-  picture?: string;
+  id: string;
+  displayName?: string;
+  mail: string;
+  photo?: string;
 }

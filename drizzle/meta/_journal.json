@@ -15,6 +15,20 @@
       "when": 1726866251059,
       "tag": "0001_overjoyed_joshua_kane",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1726868927754,
+      "tag": "0002_sloppy_corsair",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1726872695899,
+      "tag": "0003_easy_firebird",
+      "breakpoints": true
     }
   ]
 }

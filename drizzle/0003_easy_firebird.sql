@@ -1,0 +1,1 @@
+ALTER TABLE "acme_calendar_events" ALTER COLUMN "id" SET DATA TYPE varchar(255);

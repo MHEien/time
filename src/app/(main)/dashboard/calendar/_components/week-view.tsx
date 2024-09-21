@@ -27,10 +27,24 @@ const WeekView: React.FC<WeekViewProps> = ({
   const startDate = startOfWeek(currentDate)
   const endDate = endOfWeek(currentDate)
 
+  const sortEvents = (events: CalendarEvent[]): CalendarEvent[] => {
+    return events.sort((a, b) => {
+      // First, sort by start time (ascending)
+      if (a.startTime.getTime() !== b.startTime.getTime()) {
+        return a.startTime.getTime() - b.startTime.getTime()
+      }
+      // If start times are the same, sort by duration (shortest first)
+      const aDuration = a.endTime.getTime() - a.startTime.getTime()
+      const bDuration = b.endTime.getTime() - b.startTime.getTime()
+      return aDuration - bDuration
+    })
+  }
+
   const renderWeek = () => {
     const days = []
     let day = startDate
     while (day <= endDate) {
+      const dayEvents = sortEvents(getEventsForDay(events, day))
       days.push(
         <motion.div
           key={day.toString()}
@@ -52,8 +66,8 @@ const WeekView: React.FC<WeekViewProps> = ({
             onDragEnd(day)
           }}
         >
-           <span className="text-sm font-semibold">{day.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}</span>
-          {getEventsForDay(events, day).map(event => (
+          <span className="text-sm font-semibold">{day.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}</span>
+          {dayEvents.map(event => (
             <motion.div 
               key={event.id} 
               className={`text-xs ${getEventColor(event)} text-white p-1 mt-1 rounded ${event.externalCalendarId ? 'cursor-default' : 'cursor-move'}`}

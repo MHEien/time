@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import type { CalendarEvent } from '@/types/calendar'
 import { getEventColor } from '@/lib/utils/event-utils'
 
+
 interface AgendaViewProps {
   selectedEvent?: CalendarEvent | null
   setSelectedEvent?: React.Dispatch<React.SetStateAction<CalendarEvent | null>>
@@ -23,6 +24,19 @@ const AgendaView: React.FC<AgendaViewProps> = ({
   selectedAgenda,
   setSelectedAgenda
 }) => {
+  const sortEvents = (events: CalendarEvent[]): CalendarEvent[] => {
+    return [...events].sort((a, b) => {
+      // Sort by start time (ascending)
+      if (a.startTime.getTime() !== b.startTime.getTime()) {
+        return a.startTime.getTime() - b.startTime.getTime()
+      }
+      // If start times are the same, sort by duration (shortest first)
+      const aDuration = a.endTime.getTime() - a.startTime.getTime()
+      const bDuration = b.endTime.getTime() - b.startTime.getTime()
+      return aDuration - bDuration
+    })
+  }
+
   if (selectedEvent) {
     return (
       <motion.div
@@ -55,6 +69,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
   }
 
   if (selectedAgenda && selectedAgenda.length > 0) {
+    const sortedAgenda = sortEvents(selectedAgenda)
     return (
       <motion.div
         initial={{ opacity: 0, y: 100 }}
@@ -64,7 +79,7 @@ const AgendaView: React.FC<AgendaViewProps> = ({
       >
         <h2 className="text-2xl font-bold mb-4 text-indigo-300">Agenda for {selectedDate && format(selectedDate, "PPP")}</h2>
         <ScrollArea className="h-60">
-          {selectedAgenda.map(event => (
+          {sortedAgenda.map(event => (
             <div key={event.id} className={`mb-4 p-2 rounded ${getEventColor(event)} bg-opacity-80`}>
               <h3 className="font-bold">{event.title}</h3>
               <p>{format(event.startTime, "p")} - {format(event.endTime, "p")}</p>

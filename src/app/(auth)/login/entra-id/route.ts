@@ -7,7 +7,7 @@ export async function GET(): Promise<Response> {
   const state = generateState();
   const codeVerifier = generateCodeVerifier();
   const url = await entraId.createAuthorizationURL(state, codeVerifier, {
-      scopes: ["profile", "email"],
+      scopes: ["profile", "User.Read", "email", "openid", "offline_access", "Calendars.ReadWrite"],
   });
   
   cookies().set("entra_id_oauth_state", state, {

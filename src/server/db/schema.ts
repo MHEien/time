@@ -10,6 +10,7 @@ import {
   time,
   integer,
   interval,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { DATABASE_PREFIX as prefix } from "@/lib/constants";
 
@@ -38,7 +39,6 @@ export const users = pgTable(
     providerIdx: index("user_provider_idx").on(t.providerId),
   }),
 );
-
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -197,7 +197,7 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
 export const calendarEvents = pgTable(
   "calendar_events",
   {
-    id: varchar("id", { length: 15 }).primaryKey(),
+    id: varchar("id", { length: 255 }).primaryKey(),
     userId: varchar("user_id", { length: 21 }).notNull(),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
@@ -323,6 +323,7 @@ export const integrationTokens = pgTable(
   (t) => ({
     userIdx: index("integration_token_user_idx").on(t.userId),
     integrationTypeIdx: index("integration_token_type_idx").on(t.integrationType),
+    userIntegrationUnique: uniqueIndex("user_integration_unique_idx").on(t.userId, t.integrationType),
   }),
 );
 
@@ -331,4 +332,4 @@ export const integrationTokenRelations = relations(integrationTokens, ({ one }) 
     fields: [integrationTokens.userId],
     references: [users.id],
   }),
-}))
+}));

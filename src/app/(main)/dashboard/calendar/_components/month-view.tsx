@@ -27,6 +27,19 @@ const MonthView: React.FC<MonthViewProps> = ({
   onDragStart,
   onDragEnd
 }) => {
+  const sortEvents = (events: CalendarEvent[]): CalendarEvent[] => {
+    return [...events].sort((a, b) => {
+      // Sort by start time (ascending)
+      if (a.startTime.getTime() !== b.startTime.getTime()) {
+        return a.startTime.getTime() - b.startTime.getTime()
+      }
+      // If start times are the same, sort by duration (shortest first)
+      const aDuration = a.endTime.getTime() - a.startTime.getTime()
+      const bDuration = b.endTime.getTime() - b.startTime.getTime()
+      return aDuration - bDuration
+    })
+  }
+
   const renderDays = () => {
     const dateFormat = "EEE"
     const days = []
@@ -45,67 +58,70 @@ const MonthView: React.FC<MonthViewProps> = ({
     const monthDays = getMonthDays(currentDate)
     return (
       <div className="grid grid-cols-7 gap-2">
-        {monthDays.map((day) => (
-          <motion.div
-            key={day.toString()}
-            className={`min-h-[100px] border rounded-lg p-2 ${
-              !isSameMonthDay(day, currentDate)
-                ? "text-gray-200 bg-gray-100"
-                : isSameDay(day, selectedDate)
-                ? "bg-indigo-100"
-                : "bg-white"
-            } hover:shadow-lg transition-all duration-300 text-gray-500`}
-            onClick={() => onDateClick(day)}
-            whileHover={{ scale: 1.05 }}
-            onDragOver={(e) => {
-              e.preventDefault()
-              e.currentTarget.classList.add('bg-indigo-200')
-            }}
-            onDragLeave={(e) => {
-              e.currentTarget.classList.remove('bg-indigo-200')
-            }}
-            onDrop={(e) => {
-              e.preventDefault()
-              e.currentTarget.classList.remove('bg-indigo-200')
-              onDragEnd(day)
-            }}
-          >
-            <span className="text-sm font-semibold">{formatDate(day, 'd')}</span>
-            {getEventsForDay(events, day).map(event => (
-              <motion.div 
-                key={event.id} 
-                className={`text-xs ${getEventColor(event)} text-white p-1 mt-1 rounded ${event.externalCalendarId ? 'cursor-default' : 'cursor-move'}`}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                draggable={!event.externalCalendarId}
-                onDragStart={(e) => {
-                  e.stopPropagation()
-                  if (!event.externalCalendarId) onDragStart(event)
-                }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onEventClick(event)
-                }}
-              >
-                {event.title}
-              </motion.div>
-            ))}
-            {aiSuggestions
-              .filter(suggestion => isSameDay(suggestion.suggestedStartTime, day) && suggestion.status === 'pending')
-              .map(suggestion => (
+        {monthDays.map((day) => {
+          const dayEvents = sortEvents(getEventsForDay(events, day))
+          return (
+            <motion.div
+              key={day.toString()}
+              className={`min-h-[100px] border rounded-lg p-2 ${
+                !isSameMonthDay(day, currentDate)
+                  ? "text-gray-200 bg-gray-100"
+                  : isSameDay(day, selectedDate)
+                  ? "bg-indigo-100"
+                  : "bg-white"
+              } hover:shadow-lg transition-all duration-300 text-gray-500`}
+              onClick={() => onDateClick(day)}
+              whileHover={{ scale: 1.05 }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.currentTarget.classList.add('bg-indigo-200')
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.classList.remove('bg-indigo-200')
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                e.currentTarget.classList.remove('bg-indigo-200')
+                onDragEnd(day)
+              }}
+            >
+              <span className="text-sm font-semibold">{formatDate(day, 'd')}</span>
+              {dayEvents.map(event => (
                 <motion.div 
-                  key={suggestion.id} 
-                  className="text-xs bg-purple-500 text-white p-1 mt-1 rounded"
+                  key={event.id} 
+                  className={`text-xs ${getEventColor(event)} text-white p-1 mt-1 rounded ${event.externalCalendarId ? 'cursor-default' : 'cursor-move'}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
+                  draggable={!event.externalCalendarId}
+                  onDragStart={(e) => {
+                    e.stopPropagation()
+                    if (!event.externalCalendarId) onDragStart(event)
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEventClick(event)
+                  }}
                 >
-                  {suggestion.title}
+                  {event.title}
                 </motion.div>
               ))}
-          </motion.div>
-        ))}
+              {aiSuggestions
+                .filter(suggestion => isSameDay(suggestion.suggestedStartTime, day) && suggestion.status === 'pending')
+                .map(suggestion => (
+                  <motion.div 
+                    key={suggestion.id} 
+                    className="text-xs bg-purple-500 text-white p-1 mt-1 rounded"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {suggestion.title}
+                  </motion.div>
+                ))}
+            </motion.div>
+          )
+        })}
       </div>
     )
   }
