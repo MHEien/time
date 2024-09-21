@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { CalendarIcon, CreditCard, GearIcon, OpenInNewWindowIcon as IntegrationsIcon, PersonIcon as UserIcon, GlobeIcon, ChevronDownIcon } from "@/components/icons";
+import { CalendarIcon, CreditCard, GearIcon, OpenInNewWindowIcon as IntegrationsIcon, PersonIcon as UserIcon, GlobeIcon, ChevronDownIcon, GitHubLogoIcon} from "@/components/icons";
 import { usePathname, useRouter } from "next/navigation";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 
@@ -17,6 +17,11 @@ const items = [
     title: "Billing",
     href: "/dashboard/billing",
     icon: CreditCard,
+  },
+  {
+    title: "GitHub",
+    href: "/dashboard/github",
+    icon: GitHubLogoIcon,
   },
   {
     title: "Settings",

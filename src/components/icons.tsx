@@ -117,5 +117,6 @@ export {
   PersonIcon,
   GlobeIcon,
   OpenInNewWindowIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  GitHubLogoIcon
 } from "@radix-ui/react-icons";

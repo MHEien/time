@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import { BackgroundGradient } from '@/components/ui/background-gradient'
 import { ButtonsCard } from './buttons-card'
 import { Input } from '@/components/ui/input'

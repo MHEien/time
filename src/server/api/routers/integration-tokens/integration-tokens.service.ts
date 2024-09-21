@@ -6,7 +6,7 @@ import type {
   DeleteOauthAccountInput,
   MyOauthAccountsInput,
 } from "./integration-tokens.input";
-import { oauthAccountRelations, oauthAccounts } from "@/server/db/schema";
+import { oauthAccounts } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 
 export const myOauthAccounts = async (ctx: ProtectedTRPCContext, input: MyOauthAccountsInput) => {

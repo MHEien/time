@@ -54,10 +54,6 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
 
   const createdEvent = api.calendar.create.useMutation()
 
-  const suggestEvent = api.aiSuggestions.generateNextWeekEvents
-
-
-
   const onDateClick = (day: Date) => {
     setSelectedDate(day)
     const agenda = events.filter(event => isSameDay(event.startTime, day))

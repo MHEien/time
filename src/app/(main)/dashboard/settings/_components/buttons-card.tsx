@@ -1,14 +1,12 @@
 import { cn } from "@/lib/utils"
 
 export const ButtonsCard = ({
-  children,
   className,
   onClick,
   buttonText,
   type = "button",
   variant = "primary",
 }: {
-  children?: React.ReactNode
   className?: string
   onClick?: () => void
   buttonText: string
