@@ -29,6 +29,20 @@
       "when": 1726872695899,
       "tag": "0003_easy_firebird",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1726916051980,
+      "tag": "0004_redundant_switch",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1726916272381,
+      "tag": "0005_fancy_mandarin",
+      "breakpoints": true
     }
   ]
 }

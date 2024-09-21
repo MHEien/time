@@ -11,6 +11,7 @@ import { APP_TITLE } from "@/lib/constants";
 import { login } from "@/lib/auth/actions";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 
 export function Login() {
   const [state, formAction] = useFormState(login, null);
@@ -22,7 +23,7 @@ export function Login() {
         <CardDescription>Log in to your account to access your dashboard</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="my-2 flex items-center">
+        <div className="my-2 items-center flex-col space-y-2">
         <Button variant="outline" className="w-full" asChild>
           <Link href="/login/discord" prefetch={false}>
             <DiscordLogoIcon className="mr-2 h-5 w-5" />
@@ -30,9 +31,15 @@ export function Login() {
           </Link>
         </Button>
         <Button variant="outline" className="w-full" asChild>
-          <Link href="/login/entra-id" prefetch={false}>
+          <Link href="/login/entraId" prefetch={false}>
             <StitchesLogoIcon className="mr-2 h-5 w-5" />
             Log in with Azure
+          </Link>
+        </Button>
+        <Button variant="outline" className="w-full" asChild>
+          <Link href="/login/github" prefetch={false}>
+            <GitHubLogoIcon className="mr-2 h-5 w-5" />
+            Log in with GitHub
           </Link>
         </Button>
         </div>

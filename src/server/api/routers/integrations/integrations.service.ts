@@ -1,5 +1,5 @@
 import type { ProtectedTRPCContext } from "../../trpc";
-import { calendarEvents, integrationTokens } from "@/server/db/schema";
+import { calendarEvents, oauthAccounts } from "@/server/db/schema";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { getUserCalendar } from "./m-graph";
 
@@ -9,11 +9,9 @@ export const fetchOutlookCalendarEvents = async (ctx: ProtectedTRPCContext) => {
   const endDate = new Date(new Date().setDate(new Date().getDate() + 14));
 
   // Fetch access token from the database
-  const accessToken = await ctx.db.query.integrationTokens.findFirst({
-    where: and(
-      eq(integrationTokens.userId, ctx.user.id),
-      eq(integrationTokens.integrationType, 'entraId')
-    ),
+  const accessToken = await ctx.db.query.oauthAccounts.findFirst({
+    where: and(eq(oauthAccounts.userId, ctx.user.id), eq(oauthAccounts.provider, 'entraId')),
+    orderBy: (table, { desc }) => [desc(table.createdAt)],
   });
 
   if (!accessToken) throw new Error('No Outlook integration found');

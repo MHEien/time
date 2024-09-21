@@ -1,5 +1,5 @@
 import { Lucia, TimeSpan } from "lucia";
-import { Discord, MicrosoftEntraId } from "arctic";
+import { Discord, MicrosoftEntraId, GitHub } from "arctic";
 import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle";
 import { env } from "@/env.js";
 import { db } from "@/server/db";
@@ -47,7 +47,13 @@ export const entraId = new MicrosoftEntraId(
   env.MICROSOFT_ENTRA_ID_TENANT_ID!,
   env.MICROSOFT_ENTRA_ID_CLIENT_ID!,
   env.MICROSOFT_ENTRA_ID_CLIENT_SECRET!,
-  absoluteUrl("/login/entra-id/callback")
+  absoluteUrl("/login/entraId/callback")
+);
+
+export const github = new GitHub(
+  env.GITHUB_CLIENT_ID,
+  env.GITHUB_CLIENT_SECRET,
+  { redirectURI: absoluteUrl("/login/github/callback") }
 );
 
 declare module "lucia" {

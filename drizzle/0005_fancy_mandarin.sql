@@ -1,0 +1,1 @@
+ALTER TABLE "acme_oauth_accounts" ADD COLUMN "username" varchar(255);

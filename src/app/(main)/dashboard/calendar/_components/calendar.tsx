@@ -20,7 +20,7 @@ import EventModal from './event-modal'
 import AgendaView from './agenda-view'
 import AISuggestions from './ai-suggestions'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { syncOutlookCalendar } from '../../actions'
+import { syncOutlookCalendar, syncGithub } from '../../actions'
 interface CalendarPageProps {
   initialEvents: CalendarEvent[]
   initialAiSuggestions: AiSuggestion[]
@@ -227,11 +227,11 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
               <DropdownMenuItem onClick={() => syncOutlookCalendar().then(() => router.refresh())}>
                 Sync with Outlook
               </DropdownMenuItem>
-              {/*
-              <DropdownMenuItem onClick={() => handleSync('google')}>
+              /*
+              <DropdownMenuItem onClick={() => syncGithub().then(() => router.refresh())}>
                 Sync with Google Calendar
               </DropdownMenuItem>
-              */}
+              */
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
