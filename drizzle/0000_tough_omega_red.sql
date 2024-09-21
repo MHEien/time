@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "acme_activities" (
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "acme_ai_suggested_events" (
-	"id" varchar(15) PRIMARY KEY NOT NULL,
+	"id" varchar(30) PRIMARY KEY NOT NULL,
 	"user_id" varchar(21) NOT NULL,
 	"title" varchar(255) NOT NULL,
 	"description" text,
@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS "acme_ai_suggested_events" (
 	"related_project_id" varchar(15),
 	"status" varchar(20) DEFAULT 'pending',
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp
+	"updated_at" timestamp,
+	"feedback" text
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "acme_api_keys" (
@@ -37,7 +38,7 @@ CREATE TABLE IF NOT EXISTS "acme_api_keys" (
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "acme_calendar_events" (
-	"id" varchar(15) PRIMARY KEY NOT NULL,
+	"id" varchar(255) PRIMARY KEY NOT NULL,
 	"user_id" varchar(21) NOT NULL,
 	"title" varchar(255) NOT NULL,
 	"description" text,
@@ -60,10 +61,51 @@ CREATE TABLE IF NOT EXISTS "acme_email_verification_codes" (
 	CONSTRAINT "acme_email_verification_codes_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "acme_integration_tokens" (
+CREATE TABLE IF NOT EXISTS "acme_github_commits" (
 	"id" varchar(15) PRIMARY KEY NOT NULL,
 	"user_id" varchar(21) NOT NULL,
-	"integration_type" varchar(50) NOT NULL,
+	"project_id" varchar(15),
+	"message" text NOT NULL,
+	"sha" varchar(40) NOT NULL,
+	"created_at" timestamp NOT NULL,
+	"github_url" varchar(255) NOT NULL,
+	CONSTRAINT "acme_github_commits_sha_user_id_unique" UNIQUE("sha","user_id")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "acme_github_issues" (
+	"id" varchar(15) PRIMARY KEY NOT NULL,
+	"user_id" varchar(21) NOT NULL,
+	"project_id" varchar(15),
+	"title" varchar(255) NOT NULL,
+	"body" text,
+	"status" varchar(20) NOT NULL,
+	"created_at" timestamp NOT NULL,
+	"updated_at" timestamp NOT NULL,
+	"github_id" bigint NOT NULL,
+	"github_url" varchar(255) NOT NULL,
+	CONSTRAINT "acme_github_issues_github_id_user_id_unique" UNIQUE("github_id","user_id")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "acme_github_pull_requests" (
+	"id" varchar(15) PRIMARY KEY NOT NULL,
+	"user_id" varchar(21) NOT NULL,
+	"project_id" varchar(15),
+	"title" varchar(255) NOT NULL,
+	"body" text,
+	"status" varchar(20) NOT NULL,
+	"created_at" timestamp NOT NULL,
+	"updated_at" timestamp NOT NULL,
+	"github_id" bigint NOT NULL,
+	"github_url" varchar(255) NOT NULL,
+	CONSTRAINT "acme_github_pull_requests_github_id_user_id_unique" UNIQUE("github_id","user_id")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "acme_oauth_accounts" (
+	"id" varchar(21) PRIMARY KEY NOT NULL,
+	"user_id" varchar(21) NOT NULL,
+	"username" varchar(255),
+	"provider" varchar(50) NOT NULL,
+	"provider_id" varchar(255) NOT NULL,
 	"access_token" text NOT NULL,
 	"refresh_token" text,
 	"expires_at" timestamp with time zone,
@@ -116,8 +158,7 @@ CREATE TABLE IF NOT EXISTS "acme_user_settings" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "acme_users" (
 	"id" varchar(21) PRIMARY KEY NOT NULL,
-	"provider" varchar(50) NOT NULL,
-	"provider_id" varchar(255),
+	"name" varchar(255),
 	"email" varchar(255) NOT NULL,
 	"email_verified" boolean DEFAULT false NOT NULL,
 	"hashed_password" varchar(255),
@@ -128,7 +169,6 @@ CREATE TABLE IF NOT EXISTS "acme_users" (
 	"stripe_current_period_end" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp,
-	CONSTRAINT "acme_users_provider_id_unique" UNIQUE("provider_id"),
 	CONSTRAINT "acme_users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
@@ -152,14 +192,21 @@ CREATE INDEX IF NOT EXISTS "calendar_event_user_idx" ON "acme_calendar_events" U
 CREATE INDEX IF NOT EXISTS "calendar_event_start_time_idx" ON "acme_calendar_events" USING btree ("start_time");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "verification_code_user_idx" ON "acme_email_verification_codes" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "verification_code_email_idx" ON "acme_email_verification_codes" USING btree ("email");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "integration_token_user_idx" ON "acme_integration_tokens" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "integration_token_type_idx" ON "acme_integration_tokens" USING btree ("integration_type");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "github_commits_user_id_idx" ON "acme_github_commits" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "github_commits_project_id_idx" ON "acme_github_commits" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "github_issues_user_id_idx" ON "acme_github_issues" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "github_issues_project_id_idx" ON "acme_github_issues" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "github_pull_requests_user_id_idx" ON "acme_github_pull_requests" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "github_pull_requests_project_id_idx" ON "acme_github_pull_requests" USING btree ("project_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "oauth_account_user_idx" ON "acme_oauth_accounts" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "oauth_account_provider_idx" ON "acme_oauth_accounts" USING btree ("provider");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "user_provider_unique_idx" ON "acme_oauth_accounts" USING btree ("user_id","provider");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "provider_id_unique_idx" ON "acme_oauth_accounts" USING btree ("provider","provider_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "password_token_user_idx" ON "acme_password_reset_tokens" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "post_user_idx" ON "acme_posts" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "post_created_at_idx" ON "acme_posts" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "project_user_idx" ON "acme_projects" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "session_user_idx" ON "acme_sessions" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "user_email_idx" ON "acme_users" USING btree ("email");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "user_provider_idx" ON "acme_users" USING btree ("provider_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "wakatime_data_user_idx" ON "acme_wakatime_data" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "wakatime_data_recorded_at_idx" ON "acme_wakatime_data" USING btree ("recorded_at");

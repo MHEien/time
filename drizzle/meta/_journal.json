@@ -5,64 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1726861787810,
-      "tag": "0000_wandering_slipstream",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1726866251059,
-      "tag": "0001_overjoyed_joshua_kane",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1726868927754,
-      "tag": "0002_sloppy_corsair",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1726872695899,
-      "tag": "0003_easy_firebird",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1726916051980,
-      "tag": "0004_redundant_switch",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1726916272381,
-      "tag": "0005_fancy_mandarin",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1726933706946,
-      "tag": "0006_right_blizzard",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1726934442357,
-      "tag": "0007_short_newton_destine",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1726936346261,
-      "tag": "0008_outgoing_lilith",
+      "when": 1726942148905,
+      "tag": "0000_tough_omega_red",
       "breakpoints": true
     }
   ]

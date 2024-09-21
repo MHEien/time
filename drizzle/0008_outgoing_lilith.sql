@@ -1,1 +1,0 @@
-ALTER TABLE "acme_ai_suggested_events" ALTER COLUMN "id" SET DATA TYPE varchar(30);

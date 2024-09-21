@@ -1,4 +1,3 @@
-import { generateId } from "lucia";
 import type { ProtectedTRPCContext } from "../../trpc";
 import type {
   ListAiSuggestedEventsInput,
@@ -7,10 +6,10 @@ import type {
   UpdateAiSuggestedEventInput,
   DeleteAiSuggestedEventInput,
 } from "./aiSuggestions.input";
-import { activities, wakatimeData, projects, githubPullRequests, calendarEvents } from '@/server/db/schema';
+import { activities, wakatimeData, projects, githubPullRequests, calendarEvents, githubIssues, githubCommits } from '@/server/db/schema';
 import { addDays, startOfWeek, format, parse, min, max } from 'date-fns';
 import { aiSuggestedEvents, userSettings } from "@/server/db/schema";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 import { toZonedTime } from 'date-fns-tz';
 import type { Day } from 'date-fns';
 import type { RouterOutputs } from '@/trpc/shared';
@@ -19,7 +18,6 @@ import { openai } from "../../openai";
 type UserSettings = RouterOutputs['userSettings']['mySettings'];
 type Activity = typeof activities.$inferSelect;
 type WakatimeData = typeof wakatimeData.$inferSelect;
-type AiSuggestion = RouterOutputs['aiSuggestions']['myEvents'][number];
 
 type Commit = RouterOutputs['github']['myCommits'][number];
 type Issue = RouterOutputs['github']['myIssues'][number];
@@ -149,73 +147,43 @@ export const generateNextWeekEvents = async (ctx: ProtectedTRPCContext) => {
   // Fetch recent activities (last 30 days)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const recentActivities = await ctx.db.query.activities.findMany({
-    where: and(
-      eq(activities.userId, ctx.user.id),
-      gte(activities.startTime, thirtyDaysAgo)
-    ),
-    orderBy: (table, { desc }) => [desc(table.startTime)],
-  });
-  console.log("Number of recent activities:", recentActivities.length);
 
-  const nextWeekCalendarEvents = await ctx.db.query.calendarEvents.findMany({
+  const startDate = nextWeekDates[0];
+  const endDate = nextWeekDates[1];
+  let nextWeekCalendarEvents;
+  if (startDate && endDate) {
+   nextWeekCalendarEvents = await ctx.db.query.calendarEvents.findMany({
     where: and(
       eq(calendarEvents.userId, ctx.user.id),
-      sql`${calendarEvents.startTime} >= ${nextWeekDates[0]}`,
-      sql`${calendarEvents.endTime} <= ${nextWeekDates[1]}`
+      gte(calendarEvents.startTime, startDate),
+      lte(calendarEvents.endTime, endDate)
     ),
     orderBy: (table, { desc }) => [desc(table.startTime)],
-  });
-
+  })} else {
+    return [];
+  }
+  console.log("Number of next week calendar events:", nextWeekCalendarEvents.length);
   // Fetch recent Wakatime data (last 30 days)
-  const recentWakatimeData = await ctx.db.query.wakatimeData.findMany({
-    where: and(
-      eq(wakatimeData.userId, ctx.user.id),
-      gte(wakatimeData.recordedAt, thirtyDaysAgo)
-    ),
-    orderBy: (table, { desc }) => [desc(table.recordedAt)],
-  });
-  console.log("Number of recent Wakatime entries:", recentWakatimeData.length);
 
+  const recentActivities = await fetchRecentActivities(ctx, thirtyDaysAgo);
+  const recentWakatimeData = await fetchRecentWakatimeData(ctx, thirtyDaysAgo);
+  const githubData = await fetchGitHubData(ctx, thirtyDaysAgo);
   // Fetch user projects
   const userProjects = await ctx.db.query.projects.findMany({
     where: eq(projects.userId, ctx.user.id),
   });
   console.log("Number of user projects:", userProjects.length);
 
-  const prs = await ctx.db.query.githubPullRequests.findMany({
-    where: eq(githubPullRequests.userId, ctx.user.id),
-    orderBy: (table, { desc }) => [desc(table.createdAt)],
-  });
-
-  const commits = await ctx.db.query.githubCommits.findMany({
-    where: eq(githubPullRequests.userId, ctx.user.id),
-    orderBy: (table, { desc }) => [desc(table.createdAt)],
-  });
-
-  const issues = await ctx.db.query.githubIssues.findMany({
-    where: eq(githubPullRequests.userId, ctx.user.id),
-    orderBy: (table, { desc }) => [desc(table.createdAt)],
-  });
-
-  const githubData: GitHubData = {
-    issues,
-    prs,
-    commits,
-  };
-
   // Analyze patterns
   const activityPatterns = analyzeActivityPatterns(recentActivities, userSetting);
   const codingPatterns = analyzeCodingPatterns(recentWakatimeData, userSetting);
   const workPatterns = combineInsights(activityPatterns, codingPatterns);
   const githubPatterns = analyzeGithub(githubData);
+
+  
   console.log("Number of combined work patterns:", workPatterns.length);
 
-  // Get next week's dates
 
-
-  // Prepare data for LLM
-  // Optimized LLM input by summarizing and limiting data size
   const llmInput = {
     userSettings: userSetting,
     lockedEvents: nextWeekCalendarEvents.map(event => ({
@@ -229,64 +197,69 @@ export const generateNextWeekEvents = async (ctx: ProtectedTRPCContext) => {
       recurrenceRule: event.recurrenceRule,
       externalCalendarId: event.externalCalendarId,
     })),
-    workPatterns: workPatterns.slice(0, 10), // Limit to top 10 patterns
-    githubPatterns: githubPatterns.slice(0, 10), // Limit to top 10 patterns
-    projects: userProjects.slice(0, 5), // Limit to top 5 projects
+    workPatterns: workPatterns.slice(0, 10), 
+    githubPatterns: githubPatterns.slice(0, 10), 
+    projects: userProjects.slice(0, 5),
     nextWeekDates: nextWeekDates.map(date => format(date, 'yyyy-MM-dd')),
     recentActivitiesSummary: summarizeRecentActivities(recentActivities),
     recentCodingSummary: summarizeRecentCoding(recentWakatimeData),
   };
 
   const prompt = `
-You are an AI assistant tasked with generating a recommended calendar schedule for the upcoming week based on the given input. The input data is structured as follows:
+  You are an AI assistant tasked with generating a recommended calendar schedule for the upcoming week based on the given input. The input data is structured as follows:
+  
+  <todays_date>${format(new Date(), 'yyyy-MM-dd')}</todays_date>
+  <todays_day_of_week>${format(new Date(), 'EEEE')}</todays_day_of_week>
+  
+  <user_settings>${JSON.stringify(llmInput.userSettings, null, 2)}</user_settings>
+  
+  Your task is to analyze this data and generate a list of suggested events for the user's calendar for the upcoming week. The output should be in JSON format, following the structure of the \`aiSuggestedEvents\` table schema provided.
+  
+  Follow these steps to generate the recommended schedule:
+  
+  1. Process the user settings:
+     - Note the user's time zone, working hours, and week start day.
+     - Consider the user's preferences for activity tracking and calendar sync.
+  
+  2. Analyze the work patterns:
+     - Identify recurring activities and their frequencies.
+     - Consider the day of the week, start time, end time, and total duration for each pattern.
+     - Pay special attention to patterns with higher frequencies and longer durations.
+  
+  3. Incorporate projects into the schedule:
+     - Allocate time for project-related tasks based on their priority, recent activity, and GitHub data.
+     - Ensure a balance between different projects based on their recent engagement levels.
+  
+  4. Use the next week dates to structure your suggested events:
+     - Ensure that suggested events fall within these dates and the user's working hours.
+     - Distribute tasks evenly throughout the week, considering the user's typical work patterns.
+  
+  5. Incorporate insights from the recent activities and coding summaries:
+     - Suggest events that align with the user's recent activity and coding patterns.
+     - Allocate time for frequently used applications, languages, or activities.
+  
+  6. Generate suggested events based on the analyzed data:
+     - Create a balanced schedule that includes breaks, focused work, and project-specific tasks.
+     - Ensure that events do not overlap and adhere to the user's working hours.
+     - Prioritize tasks based on recent GitHub activity (e.g., open PRs, issues, recent commits).
+  
+  7. For each suggested event, provide the following information:
+     - A descriptive title that clearly indicates the purpose of the event
+     - A brief description explaining the event's context and importance
+     - Suggested start and end times (in ISO 8601 format with timezone)
+     - A priority level (1-5, with 1 being highest priority)
+     - Related activity or project ID (if applicable)
+     - Status (set to "pending" for all suggested events)
+  
+  8. Ensure variety and balance in the schedule:
+     - Mix different types of activities (coding, meetings, planning, etc.)
+     - Include buffer time between tasks for context switching
+     - Suggest breaks and time for personal development
+  
+  Format your output as a JSON array of objects, where each object represents a suggested event and follows the structure provided earlier.
 
-<todays_date> ${format(new Date(), 'yyyy-MM-dd')} </todays_date>
-<todays_day_of_week> ${format(new Date(), 'EEEE')} </todays_day_of_week>
-
-<user_settings> ${JSON.stringify(llmInput.userSettings, null, 2)} </user_settings>
-
-Your task is to analyze this data and generate a list of suggested events for the user's calendar for the upcoming week. The output should be in JSON format, following the structure of the \`aiSuggestedEvents\` table schema provided.
-
-Follow these steps to generate the recommended schedule:
-
-1. Process the user settings:
-   - Note the user's time zone, working hours, and week start day.
-   - Consider the user's preferences for activity tracking and calendar sync.
-
-2. Analyze the work patterns:
-   - Identify recurring activities and their frequencies.
-   - Consider the day of the week, start time, and end time for each pattern.
-
-3. If there are any projects listed, incorporate them into the schedule:
-   - Allocate time for project-related tasks based on their priority and deadlines.
-
-4. Use the next week dates to structure your suggested events:
-   - Ensure that suggested events fall within these dates.
-   - Respect the user's working hours when scheduling events.
-
-5. Incorporate insights from the recent activities summary:
-   - Suggest events that align with the user's recent activity patterns.
-   - Allocate time for frequently used applications or activities.
-
-6. If the recent coding summary contains data, use it to suggest coding-related events:
-   - Schedule coding sessions based on the user's recent coding activity.
-
-7. Generate suggested events based on the analyzed data:
-   - Create a balanced schedule that includes breaks and time for focused work.
-   - Ensure that events do not overlap and adhere to the user's working hours.
-
-8. For each suggested event, provide the following information:
-   - The user ID from the input data
-   - A descriptive title
-   - A brief description of the event's purpose
-   - Suggested start and end times (in ISO 8601 format with timezone)
-   - A priority level (1-5, with 1 being highest priority)
-   - Related activity or project ID (if applicable)
-   - Status (set to "pending" for all suggested events)
-
-9. Format your output as a JSON array of objects, where each object represents a suggested event and follows the structure of the following schema:
-
-{
+  Schema:
+  {
   "title": string,
   "description": string,
   "suggestedStartTime": string,
@@ -296,16 +269,15 @@ Follow these steps to generate the recommended schedule:
   "relatedProjectId": string | null,
   "status": "pending" | "accepted" | "rejected"
 }
-
-Additional instructions:
-
-- Ensure there is at least a 15-minute break between events.
-- The maximum duration of any single event should not exceed 3 hours.
-- Avoid scheduling events outside the user's working hours.
-- The schedule should be realistic and considerate of the user's well-being.
-
-It is essential that your response is a valid JSON array of objects, and contain no other text or code.
-`;
+  
+  Additional instructions:
+  - Ensure there is at least a 15-minute break between events.
+  - The maximum duration of any single event should not exceed 3 hours.
+  - Avoid scheduling events outside the user's working hours.
+  - The schedule should be realistic, considerate of the user's well-being, and aligned with their recent work patterns.
+  
+  It is essential that your response is a valid JSON array of objects, and contain no other text or code.
+  `;
 
   console.log("LLM prompt:", prompt);
 
@@ -334,23 +306,8 @@ It is essential that your response is a valid JSON array of objects, and contain
   console.log("Sanitized output:", rawOutput);
 
   // Try parsing the sanitized output
-  let output;
-  try {
-    output = JSON.parse(rawOutput) as LLMEvent[];
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      throw new Error("Failed to parse LLM output as JSON: " + error.message);
-    } else {
-      throw new Error("An unknown error occurred during JSON parsing");
-    }
-  }
-
-  // Validate the parsed output
-  if (!output || !Array.isArray(output)) {
-    throw new Error("LLM output is empty or invalid");
-  }
-
-
+// After parsing the LLM output
+const output = JSON.parse(rawOutput) as LLMEvent[];
 
   // Insert the events into the database using bulk insert
   const eventValues = output.map((event: LLMEvent) => ({
@@ -373,14 +330,6 @@ It is essential that your response is a valid JSON array of objects, and contain
   return insertedEvents;
 };
 
-// Validation function for LLMEvent
-function validateLLMEvent(event: LLMEvent): event is LLMEvent {
-  if (!event.userId || !event.title || !event.suggestedStartTime || !event.suggestedEndTime) {
-    return false;
-  }
-  // Additional validation can be added here
-  return true;
-}
 
 function summarizeRecentActivities(activities: Activity[]): Record<string, number> {
   // Aggregate data to reduce size
@@ -463,7 +412,6 @@ function analyzeActivityPatterns(activities: Activity[], userSettings: UserSetti
     const startTime = format(zonedStartTime, 'HH:mm');
     const endTime = activity.endTime ? format(toZonedTime(activity.endTime, userSettings?.timeZone ?? 'UTC'), 'HH:mm') : startTime;
 
-    // Normalize times to 15-minute intervals
     const normalizedStartTime = normalizeTime(startTime);
     const normalizedEndTime = normalizeTime(endTime);
 
@@ -476,11 +424,10 @@ function analyzeActivityPatterns(activities: Activity[], userSettings: UserSetti
         endTime: normalizedEndTime,
         activityType: activity.activityType,
         projectId: activity.projectId ?? undefined,
-        frequency: 1,
+        frequency: 1
       };
     } else {
       patterns[key].frequency += 1;
-      // Update end time if this activity ended later
       if (normalizedEndTime > patterns[key].endTime) {
         patterns[key].endTime = normalizedEndTime;
       }
@@ -489,7 +436,6 @@ function analyzeActivityPatterns(activities: Activity[], userSettings: UserSetti
 
   return Object.values(patterns).sort((a, b) => b.frequency - a.frequency);
 }
-
 function analyzeCodingPatterns(wakatimeData: WakatimeData[], userSettings: UserSettings): WorkPattern[] {
   const patterns: Record<string, WorkPattern> = {};
 
@@ -568,4 +514,68 @@ function combineInsights(activityPatterns: WorkPattern[], codingPatterns: WorkPa
   }, [] as WorkPattern[]);
 
   return mergedPatterns.sort((a, b) => b.frequency - a.frequency);
+}
+
+
+async function fetchRecentActivities(ctx: ProtectedTRPCContext, since: Date) {
+  return ctx.db.query.activities.findMany({
+    where: and(
+      eq(activities.userId, ctx.user.id),
+      gte(activities.startTime, since)
+    ),
+    orderBy: (table, { desc }) => [desc(table.startTime)],
+    with: {
+      project: true,
+    },
+  });
+}
+
+async function fetchRecentWakatimeData(ctx: ProtectedTRPCContext, since: Date) {
+  return ctx.db.query.wakatimeData.findMany({
+    where: and(
+      eq(wakatimeData.userId, ctx.user.id),
+      gte(wakatimeData.recordedAt, since)
+    ),
+    orderBy: (table, { desc }) => [desc(table.recordedAt)],
+    with: {
+      project: true,
+    },
+  });
+}
+
+async function fetchGitHubData(ctx: ProtectedTRPCContext, since: Date) {
+  const [issues, prs, commits] = await Promise.all([
+    ctx.db.query.githubIssues.findMany({
+      where: and(
+        eq(githubIssues.userId, ctx.user.id),
+        gte(githubIssues.createdAt, since)
+      ),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+      with: {
+        project: true,
+      },
+    }),
+    ctx.db.query.githubPullRequests.findMany({
+      where: and(
+        eq(githubPullRequests.userId, ctx.user.id),
+        gte(githubPullRequests.createdAt, since)
+      ),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+      with: {
+        project: true,
+      },
+    }),
+    ctx.db.query.githubCommits.findMany({
+      where: and(
+        eq(githubCommits.userId, ctx.user.id),
+        gte(githubCommits.createdAt, since)
+      ),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+      with: {
+        project: true,
+      },
+    }),
+  ]);
+
+  return { issues, prs, commits };
 }

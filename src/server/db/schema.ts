@@ -273,6 +273,7 @@ export const aiSuggestedEvents = pgTable(
     status: varchar("status", { length: 20, enum: ["pending", "accepted", "rejected"] }).default("pending"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).$onUpdate(() => new Date()),
+    feedback: text("feedback"),
   },
   (t) => ({
     userIdx: index("ai_suggested_event_user_idx").on(t.userId),

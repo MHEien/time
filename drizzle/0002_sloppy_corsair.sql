@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX IF NOT EXISTS "user_integration_unique_idx" ON "acme_integration_tokens" USING btree ("user_id","integration_type");
