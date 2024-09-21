@@ -92,7 +92,8 @@ export async function handleOAuthCallback(
   code: string,
   storedState: string | null,
   state: string,
-  storedCodeVerifier?: string | null
+  storedCodeVerifier?: string | null,
+  existingSessionId?: string | null
 ): Promise<Response> {
   if (!code || !state || !storedState || state !== storedState) {
     return new Response(null, {
@@ -122,48 +123,83 @@ export async function handleOAuthCallback(
         and(eq(table.provider, providerName), eq(table.providerId, userData.id)),
     });
 
-    const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, userData.email),
-    });
-
     let userId: string;
+    let accountLinked = false;
 
-    if (existingOAuthAccount) {
-      // User is logging in with an already linked account
-      userId = existingOAuthAccount.userId;
-    } else if (existingUser) {
-      // User is linking a new OAuth account to an existing user
-      userId = existingUser.id;
-      await db.insert(oauthAccounts).values({
-        id: generateId(21),
-        userId: userId,
-        provider: providerName,
-        providerId: userData.id,
-        username: userData.name,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken ?? null,
-        expiresAt: tokens.accessTokenExpiresAt,
-      });
+    if (existingSessionId) {
+      // User is already signed in, link the new OAuth account
+      const existingSession = await lucia.validateSession(existingSessionId);
+      if (!existingSession.user) {
+        throw new Error("Invalid session");
+      }
+      userId = existingSession.user.id;
+
+      // Check if this OAuth account is already linked to another user
+      if (existingOAuthAccount && existingOAuthAccount.userId !== userId) {
+        return new Response(
+          JSON.stringify({
+            error: "This OAuth account is already linked to another user.",
+          }),
+          { status: 400, headers: { Location: Paths.Dashboard } }
+        );
+      }
+
+      // Link the new OAuth account to the existing user
+      if (!existingOAuthAccount) {
+        await db.insert(oauthAccounts).values({
+          id: generateId(21),
+          userId: userId,
+          provider: providerName,
+          providerId: userData.id,
+          username: userData.name,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken ?? null,
+          expiresAt: tokens.accessTokenExpiresAt,
+        });
+        accountLinked = true;
+      }
     } else {
-      // New user registration
-      userId = generateId(21);
-      await db.insert(users).values({
-        id: userId,
-        email: userData.email,
-        emailVerified: true,
-        name: userData.name,
-        avatar: userData.avatar,
-      });
-      await db.insert(oauthAccounts).values({
-        id: generateId(21),
-        userId,
-        username: userData.name,
-        provider: providerName,
-        providerId: userData.id,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken ?? null,
-        expiresAt: tokens.accessTokenExpiresAt,
-      });
+      // Handle the case where the user is not signed in (existing logic)
+      if (existingOAuthAccount) {
+        userId = existingOAuthAccount.userId;
+      } else {
+        const existingUser = await db.query.users.findFirst({
+          where: eq(users.email, userData.email),
+        });
+
+        if (existingUser) {
+          userId = existingUser.id;
+          await db.insert(oauthAccounts).values({
+            id: generateId(21),
+            userId: userId,
+            provider: providerName,
+            providerId: userData.id,
+            username: userData.name,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken ?? null,
+            expiresAt: tokens.accessTokenExpiresAt,
+          });
+        } else {
+          userId = generateId(21);
+          await db.insert(users).values({
+            id: userId,
+            email: userData.email,
+            emailVerified: true,
+            name: userData.name,
+            avatar: userData.avatar,
+          });
+          await db.insert(oauthAccounts).values({
+            id: generateId(21),
+            userId,
+            username: userData.name,
+            provider: providerName,
+            providerId: userData.id,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken ?? null,
+            expiresAt: tokens.accessTokenExpiresAt,
+          });
+        }
+      }
     }
 
     // Update user information
@@ -172,13 +208,34 @@ export async function handleOAuthCallback(
       .set({ name: userData.name, avatar: userData.avatar })
       .where(eq(users.id, userId));
 
-    const session = await lucia.createSession(userId, {});
-    const sessionCookie = lucia.createSessionCookie(session.id);
+    // If the user wasn't already signed in, create a new session
+    if (!existingSessionId) {
+      const session = await lucia.createSession(userId, {});
+      const sessionCookie = lucia.createSessionCookie(session.id);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: Paths.Dashboard,
+          "Set-Cookie": sessionCookie.serialize(),
+        },
+      });
+    }
+
+    // If the user was already signed in and linked a new account, redirect to /dashboard/integrations
+    if (accountLinked) {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: `${Paths.Dashboard}/settings/integrations`,
+        },
+      });
+    }
+
+    // If the user was already signed in but didn't link a new account, just redirect to the dashboard
     return new Response(null, {
       status: 302,
       headers: {
         Location: Paths.Dashboard,
-        "Set-Cookie": sessionCookie.serialize(),
       },
     });
   } catch (e) {

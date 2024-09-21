@@ -21,6 +21,7 @@ import AgendaView from './agenda-view'
 import AISuggestions from './ai-suggestions'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { syncOutlookCalendar, syncGithub } from '../../actions'
+import { generateSchedule } from '../../actions'
 interface CalendarPageProps {
   initialEvents: CalendarEvent[]
   initialAiSuggestions: AiSuggestion[]
@@ -52,6 +53,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
   }, [initialAiSuggestions])
 
   const createdEvent = api.calendar.create.useMutation()
+
+  const suggestEvent = api.aiSuggestions.generateNextWeekEvents
 
 
 
@@ -234,6 +237,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
               */
             </DropdownMenuContent>
           </DropdownMenu>
+          <button className="ml-auto" onClick={() => generateSchedule().then(() => router.refresh())}>
+            test
+          </button>
         </div>
       </motion.div>
     )

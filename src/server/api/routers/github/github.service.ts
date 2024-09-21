@@ -38,7 +38,6 @@ export const myGithubCommits = async (ctx: ProtectedTRPCContext, input: MyGithub
 };
 
 export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
-
   const githubAccount = await ctx.db.query.oauthAccounts.findFirst({
     where: and(
       eq(oauthAccounts.userId, ctx.user.id),
@@ -69,12 +68,21 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
     }
   }
 
+  const summary = {
+    totalIssues: 0,
+    totalPullRequests: 0,
+    totalCommits: 0,
+    reposProcessed: 0
+  };
+
   for (const repoFullName of recentRepos) {
     const [owner, repo] = repoFullName?.split('/') ?? [];
 
     if (!owner || !repo) {
       continue;
     }
+
+    summary.reposProcessed++;
 
     // Fetch issues
     const { data: issues } = await octokit.issues.listForRepo({
@@ -94,9 +102,19 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
           status: issue.state,
           createdAt: new Date(issue.created_at),
           updatedAt: new Date(issue.updated_at),
-          githubId: issue.id,
+          githubId: BigInt(issue.number),
           githubUrl: issue.html_url ?? '',
+        }).onConflictDoUpdate({
+          target: [githubIssues.githubId, githubIssues.userId],
+          set: {
+            title: issue.title ?? '',
+            body: issue.body ?? '',
+            status: issue.state,
+            updatedAt: new Date(issue.updated_at),
+            githubUrl: issue.html_url ?? '',
+          }
         });
+        summary.totalIssues++;
       }
     }
 
@@ -119,9 +137,19 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
           status: pr.state,
           createdAt: new Date(pr.created_at),
           updatedAt: new Date(pr.updated_at),
-          githubId: pr.id,
+          githubId: BigInt(pr.number),
           githubUrl: pr.html_url,
+        }).onConflictDoUpdate({
+          target: [githubPullRequests.githubId, githubPullRequests.userId],
+          set: {
+            title: pr.title,
+            body: pr.body ?? '',
+            status: pr.state,
+            updatedAt: new Date(pr.updated_at),
+            githubUrl: pr.html_url,
+          }
         });
+        summary.totalPullRequests++;
       }
     }
 
@@ -142,7 +170,17 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
         sha: commit.sha,
         createdAt: authorDate,
         githubUrl: commit.html_url ?? '',
+      }).onConflictDoUpdate({
+        target: [githubCommits.sha, githubCommits.userId],
+        set: {
+          message: commit.commit.message,
+          createdAt: authorDate,
+          githubUrl: commit.html_url ?? '',
+        }
       });
+      summary.totalCommits++;
     }
   }
+
+  return summary;
 }

@@ -81,6 +81,17 @@
   }
 }
 
+.no-visible-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.no-visible-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+
 .animated-spinner {
   transform-origin: center;
   animation: loader-spin 0.75s step-end infinite;

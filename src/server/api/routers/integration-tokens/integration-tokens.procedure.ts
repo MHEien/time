@@ -3,23 +3,16 @@ import * as inputs from "./integration-tokens.input";
 import * as services from "./integration-tokens.service";
 
 export const integrationTokensRouter = createTRPCRouter({
-  list: protectedProcedure
-    .input(inputs.listIntegrationTokensSchema)
-    .query(({ ctx, input }) => services.listIntegrationTokens(ctx, input)),
-
-  get: protectedProcedure
-    .input(inputs.getIntegrationTokenSchema)
-    .query(({ ctx, input }) => services.getIntegrationToken(ctx, input)),
-
-  create: protectedProcedure
-    .input(inputs.createIntegrationTokenSchema)
-    .mutation(({ ctx, input }) => services.createIntegrationToken(ctx, input)),
-
-  update: protectedProcedure
-    .input(inputs.updateIntegrationTokenSchema)
-    .mutation(({ ctx, input }) => services.updateIntegrationToken(ctx, input)),
-
-  delete: protectedProcedure
-    .input(inputs.deleteIntegrationTokenSchema)
-    .mutation(({ ctx, input }) => services.deleteIntegrationToken(ctx, input)),
+  myOauthAccounts: protectedProcedure
+    .input(inputs.myOauthAccountsSchema)
+    .query(({ ctx, input }) => services.myOauthAccounts(ctx, input)),
+  addOauthAccount: protectedProcedure
+    .input(inputs.addOauthAccountSchema)
+    .mutation(({ ctx, input }) => services.addOauthAccount(ctx, input)),
+  updateOauthAccount: protectedProcedure
+    .input(inputs.updateOauthAccountSchema)
+    .mutation(({ ctx, input }) => services.updateOauthAccount(ctx, input)),
+  deleteOauthAccount: protectedProcedure
+    .input(inputs.deleteOauthAccountSchema)
+    .mutation(({ ctx, input }) => services.deleteOauthAccount(ctx, input)),
 });

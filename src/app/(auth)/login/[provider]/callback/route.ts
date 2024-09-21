@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { handleOAuthCallback } from "@/lib/auth/auth-utils";
 import type { OAuthProvider } from "@/lib/auth/auth-utils";
-
+import { lucia } from "@/lib/auth";
 
 export async function GET(
   request: Request,
@@ -12,7 +12,6 @@ export async function GET(
   const state = url.searchParams.get("state");
   const provider = params.provider;
   
-  // Use the correct cookie name
   const storedState = cookies().get(`${provider}_oauth_state`)?.value ?? null;
   const storedCodeVerifier = cookies().get(`${provider}_oauth_code_verifier`)?.value ?? null;
 
@@ -23,5 +22,9 @@ export async function GET(
     });
   }
 
-  return handleOAuthCallback(provider, code, storedState, state, storedCodeVerifier);
+  // Check for existing session
+  const existingSessionId = cookies().get(lucia.sessionCookieName)?.value ?? null;
+
+  // Pass the existingSessionId to handleOAuthCallback
+  return handleOAuthCallback(provider, code, storedState, state, storedCodeVerifier, existingSessionId);
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "acme_github_issues" ALTER COLUMN "github_id" SET DATA TYPE bigint;

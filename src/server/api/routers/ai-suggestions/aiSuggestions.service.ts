@@ -7,10 +7,10 @@ import type {
   UpdateAiSuggestedEventInput,
   DeleteAiSuggestedEventInput,
 } from "./aiSuggestions.input";
-import { activities, wakatimeData, projects } from '@/server/db/schema';
+import { activities, wakatimeData, projects, githubPullRequests, calendarEvents } from '@/server/db/schema';
 import { addDays, startOfWeek, format, parse, min, max } from 'date-fns';
 import { aiSuggestedEvents, userSettings } from "@/server/db/schema";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { toZonedTime } from 'date-fns-tz';
 import type { Day } from 'date-fns';
 import type { RouterOutputs } from '@/trpc/shared';
@@ -19,19 +19,27 @@ import { openai } from "../../openai";
 type UserSettings = RouterOutputs['userSettings']['mySettings'];
 type Activity = typeof activities.$inferSelect;
 type WakatimeData = typeof wakatimeData.$inferSelect;
+type AiSuggestion = RouterOutputs['aiSuggestions']['myEvents'][number];
+
+type Commit = RouterOutputs['github']['myCommits'][number];
+type Issue = RouterOutputs['github']['myIssues'][number];
+type PullRequest = RouterOutputs['github']['myPRs'][number];
+
+type GitHubData = {
+  issues: Issue[];
+  prs: PullRequest[];
+  commits: Commit[];
+};
 
 interface LLMEvent {
   userId: string;
   title: string;
   description: string;
-  suggestedStartTime: string;
-  suggestedEndTime: string;
+  suggestedStartTime: string | Date;
+  suggestedEndTime: string | Date;
   priority: number;
-  relatedActivityId: string | null;
-  relatedProjectId: string | null;
+  relatedActivityOrProjectId: string | null;
   status: "pending" | "accepted" | "rejected";
-  createdAt: string;
-  updatedAt: string | null;
 }
 
 interface WorkPattern {
@@ -73,10 +81,9 @@ export const getAiSuggestedEvent = async (ctx: ProtectedTRPCContext, input: GetA
 };
 
 export const createAiSuggestedEvent = async (ctx: ProtectedTRPCContext, input: CreateAiSuggestedEventInput) => {
-  const id = generateId(15);
 
-  const [event] = await ctx.db.insert(aiSuggestedEvents).values({
-    id,
+  const event = await ctx.db.insert(aiSuggestedEvents).values({
+    id: crypto.randomUUID().slice(0, 30),
     userId: ctx.user.id,
     title: input.title,
     description: input.description,
@@ -86,10 +93,11 @@ export const createAiSuggestedEvent = async (ctx: ProtectedTRPCContext, input: C
     relatedActivityId: input.relatedActivityId,
     relatedProjectId: input.relatedProjectId,
     status: "pending",
-  }).returning();
+  }).returning().then(([insertedEvent]) => insertedEvent);
 
   return event;
 };
+
 
 export const updateAiSuggestedEvent = async (ctx: ProtectedTRPCContext, input: UpdateAiSuggestedEventInput) => {
   const [event] = await ctx.db
@@ -137,7 +145,7 @@ export const generateNextWeekEvents = async (ctx: ProtectedTRPCContext) => {
     defaultCalendarSyncEnabled: true,
   };
   console.log("User settings:", userSetting);
-
+  const nextWeekDates = getNextWeekDates(userSetting.weekStartDay as Day);
   // Fetch recent activities (last 30 days)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -149,6 +157,15 @@ export const generateNextWeekEvents = async (ctx: ProtectedTRPCContext) => {
     orderBy: (table, { desc }) => [desc(table.startTime)],
   });
   console.log("Number of recent activities:", recentActivities.length);
+
+  const nextWeekCalendarEvents = await ctx.db.query.calendarEvents.findMany({
+    where: and(
+      eq(calendarEvents.userId, ctx.user.id),
+      sql`${calendarEvents.startTime} >= ${nextWeekDates[0]}`,
+      sql`${calendarEvents.endTime} <= ${nextWeekDates[1]}`
+    ),
+    orderBy: (table, { desc }) => [desc(table.startTime)],
+  });
 
   // Fetch recent Wakatime data (last 30 days)
   const recentWakatimeData = await ctx.db.query.wakatimeData.findMany({
@@ -166,20 +183,54 @@ export const generateNextWeekEvents = async (ctx: ProtectedTRPCContext) => {
   });
   console.log("Number of user projects:", userProjects.length);
 
+  const prs = await ctx.db.query.githubPullRequests.findMany({
+    where: eq(githubPullRequests.userId, ctx.user.id),
+    orderBy: (table, { desc }) => [desc(table.createdAt)],
+  });
+
+  const commits = await ctx.db.query.githubCommits.findMany({
+    where: eq(githubPullRequests.userId, ctx.user.id),
+    orderBy: (table, { desc }) => [desc(table.createdAt)],
+  });
+
+  const issues = await ctx.db.query.githubIssues.findMany({
+    where: eq(githubPullRequests.userId, ctx.user.id),
+    orderBy: (table, { desc }) => [desc(table.createdAt)],
+  });
+
+  const githubData: GitHubData = {
+    issues,
+    prs,
+    commits,
+  };
+
   // Analyze patterns
   const activityPatterns = analyzeActivityPatterns(recentActivities, userSetting);
   const codingPatterns = analyzeCodingPatterns(recentWakatimeData, userSetting);
   const workPatterns = combineInsights(activityPatterns, codingPatterns);
+  const githubPatterns = analyzeGithub(githubData);
   console.log("Number of combined work patterns:", workPatterns.length);
 
   // Get next week's dates
-  const nextWeekDates = getNextWeekDates(userSetting.weekStartDay as Day);
+
 
   // Prepare data for LLM
   // Optimized LLM input by summarizing and limiting data size
   const llmInput = {
     userSettings: userSetting,
+    lockedEvents: nextWeekCalendarEvents.map(event => ({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      location: event.location,
+      isAllDay: event.isAllDay,
+      recurrenceRule: event.recurrenceRule,
+      externalCalendarId: event.externalCalendarId,
+    })),
     workPatterns: workPatterns.slice(0, 10), // Limit to top 10 patterns
+    githubPatterns: githubPatterns.slice(0, 10), // Limit to top 10 patterns
     projects: userProjects.slice(0, 5), // Limit to top 5 projects
     nextWeekDates: nextWeekDates.map(date => format(date, 'yyyy-MM-dd')),
     recentActivitiesSummary: summarizeRecentActivities(recentActivities),
@@ -233,7 +284,18 @@ Follow these steps to generate the recommended schedule:
    - Related activity or project ID (if applicable)
    - Status (set to "pending" for all suggested events)
 
-9. Format your output as a JSON array of objects, where each object represents a suggested event and follows the structure of the \`aiSuggestedEvents\` table schema.
+9. Format your output as a JSON array of objects, where each object represents a suggested event and follows the structure of the following schema:
+
+{
+  "title": string,
+  "description": string,
+  "suggestedStartTime": string,
+  "suggestedEndTime": string,
+  "priority": number,
+  "relatedActivityId": string | null,
+  "relatedProjectId": string | null,
+  "status": "pending" | "accepted" | "rejected"
+}
 
 Additional instructions:
 
@@ -249,7 +311,7 @@ It is essential that your response is a valid JSON array of objects, and contain
 
   // Send llmInput to LLM service and process the response
   const completion = await openai.chat.completions.create({
-    model: "gpt-4",
+    model: "gpt-4o",
     messages: [
       {
         role: "system",
@@ -288,29 +350,22 @@ It is essential that your response is a valid JSON array of objects, and contain
     throw new Error("LLM output is empty or invalid");
   }
 
-  // Validate each event
-  const validatedEvents = output.filter(validateLLMEvent);
 
-  if (validatedEvents.length === 0) {
-    throw new Error("No valid events found in LLM output");
-  }
 
   // Insert the events into the database using bulk insert
-  const eventValues = validatedEvents.map((event: LLMEvent) => ({
-    id: crypto.randomUUID(),
+  const eventValues = output.map((event: LLMEvent) => ({
+    id: crypto.randomUUID().slice(0, 30),
     userId: ctx.user.id,
     title: event.title,
     description: event.description,
     suggestedStartTime: new Date(event.suggestedStartTime),
     suggestedEndTime: new Date(event.suggestedEndTime),
     priority: event.priority,
-    relatedActivityId: event.relatedActivityId,
-    relatedProjectId: event.relatedProjectId,
     status: event.status ?? "pending",
     createdAt: new Date(),
     updatedAt: null,
   }));
-
+  console.log("Inserted events:", eventValues);
   const insertedEvents = await ctx.db.insert(aiSuggestedEvents).values(eventValues).returning();
 
   console.log("Inserted events:", insertedEvents);
@@ -319,7 +374,7 @@ It is essential that your response is a valid JSON array of objects, and contain
 };
 
 // Validation function for LLMEvent
-function validateLLMEvent(event: LLMEvent): boolean {
+function validateLLMEvent(event: LLMEvent): event is LLMEvent {
   if (!event.userId || !event.title || !event.suggestedStartTime || !event.suggestedEndTime) {
     return false;
   }
@@ -359,6 +414,46 @@ function summarizeRecentCoding(wakatimeData: WakatimeData[]): Record<string, num
   return Object.fromEntries(sortedCoding);
 }
 
+function analyzeGithub(githubData: GitHubData): WorkPattern[] {
+  const patterns: Record<string, WorkPattern> = {};
+
+  function processItem(item: { createdAt: string | Date, projectId?: string | null }, itemType: string) {
+    try {
+      const createdAt = item.createdAt instanceof Date ? item.createdAt : new Date(item.createdAt);
+      if (isNaN(createdAt.getTime())) {
+        console.warn(`Invalid date for ${itemType}:`, item.createdAt);
+        return;
+      }
+
+      const zonedStartTime = toZonedTime(createdAt, new Date().toLocaleString('en-US', { timeZone: 'UTC' }));
+      const dayOfWeek = zonedStartTime.getDay();
+      const startTime = format(zonedStartTime, 'HH:mm');
+
+      const key = `${dayOfWeek}-${startTime}-${item.projectId ?? 'noProject'}`;
+
+      if (!patterns[key]) {
+        patterns[key] = {
+          dayOfWeek,
+          startTime,
+          endTime: startTime,
+          activityType: 'coding',
+          projectId: item.projectId ?? undefined,
+          frequency: 1,
+        };
+      } else {
+        patterns[key].frequency += 1;
+      }
+    } catch (error) {
+      console.error(`Error processing ${itemType}:`, error);
+    }
+  }
+
+  githubData.issues.forEach(issue => processItem(issue, 'issue'));
+  githubData.prs.forEach(pr => processItem(pr, 'pull request'));
+  githubData.commits.forEach(commit => processItem(commit, 'commit'));
+
+  return Object.values(patterns).sort((a, b) => b.frequency - a.frequency);
+}
 function analyzeActivityPatterns(activities: Activity[], userSettings: UserSettings): WorkPattern[] {
   const patterns: Record<string, WorkPattern> = {};
 

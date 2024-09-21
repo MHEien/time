@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   pgTableCreator,
   serial,
+  bigint,
   boolean,
   index,
   text,
@@ -11,6 +12,7 @@ import {
   integer,
   interval,
   uniqueIndex,
+  unique,
 } from "drizzle-orm/pg-core";
 import { DATABASE_PREFIX as prefix } from "@/lib/constants";
 
@@ -259,7 +261,7 @@ export const calendarEventRelations = relations(calendarEvents, ({ one }) => ({
 export const aiSuggestedEvents = pgTable(
   "ai_suggested_events",
   {
-    id: varchar("id", { length: 15 }).primaryKey(),
+    id: varchar("id", { length: 30 }).primaryKey(),
     userId: varchar("user_id", { length: 21 }).notNull(),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
@@ -351,9 +353,13 @@ export const githubIssues = pgTable("github_issues", {
   status: varchar("status", { length: 20 }).notNull(),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
-  githubId: integer("github_id").notNull(),
+  githubId: bigint("github_id", { mode: 'bigint' }).notNull(),
   githubUrl: varchar("github_url", { length: 255 }).notNull(),
-});
+}, (table) => ({
+  uniqueGithubIssue: unique().on(table.githubId, table.userId),
+  userIdIdx: index("github_issues_user_id_idx").on(table.userId),
+  projectIdIdx: index("github_issues_project_id_idx").on(table.projectId),
+}));
 
 export const githubPullRequests = pgTable("github_pull_requests", {
   id: varchar("id", { length: 15 }).primaryKey(),
@@ -364,9 +370,13 @@ export const githubPullRequests = pgTable("github_pull_requests", {
   status: varchar("status", { length: 20 }).notNull(),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
-  githubId: integer("github_id").notNull(),
+  githubId: bigint("github_id", { mode: 'bigint' }).notNull(), // Changed to bigint for consistency
   githubUrl: varchar("github_url", { length: 255 }).notNull(),
-});
+}, (table) => ({
+  uniqueGithubPR: unique().on(table.githubId, table.userId),
+  userIdIdx: index("github_pull_requests_user_id_idx").on(table.userId),
+  projectIdIdx: index("github_pull_requests_project_id_idx").on(table.projectId),
+}));
 
 export const githubCommits = pgTable("github_commits", {
   id: varchar("id", { length: 15 }).primaryKey(),
@@ -376,7 +386,11 @@ export const githubCommits = pgTable("github_commits", {
   sha: varchar("sha", { length: 40 }).notNull(),
   createdAt: timestamp("created_at").notNull(),
   githubUrl: varchar("github_url", { length: 255 }).notNull(),
-});
+}, (table) => ({
+  uniqueGithubCommit: unique().on(table.sha, table.userId),
+  userIdIdx: index("github_commits_user_id_idx").on(table.userId),
+  projectIdIdx: index("github_commits_project_id_idx").on(table.projectId),
+}));
 
 export const githubRelations = relations(githubIssues, ({ one }) => ({
   user: one(users, { fields: [githubIssues.userId], references: [users.id] }),
