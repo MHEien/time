@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PasswordInput } from "@/components/password-input";
-import { DiscordLogoIcon } from "@/components/icons";
+import { DiscordLogoIcon, StitchesLogoIcon } from "@/components/icons";
 import { APP_TITLE } from "@/lib/constants";
 import { login } from "@/lib/auth/actions";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 
 export function Login() {
   const [state, formAction] = useFormState(login, null);
@@ -22,12 +23,26 @@ export function Login() {
         <CardDescription>Log in to your account to access your dashboard</CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="my-2 items-center flex-col space-y-2">
         <Button variant="outline" className="w-full" asChild>
           <Link href="/login/discord" prefetch={false}>
             <DiscordLogoIcon className="mr-2 h-5 w-5" />
             Log in with Discord
           </Link>
         </Button>
+        <Button variant="outline" className="w-full" asChild>
+          <Link href="/login/entraId" prefetch={false}>
+            <StitchesLogoIcon className="mr-2 h-5 w-5" />
+            Log in with Azure
+          </Link>
+        </Button>
+        <Button variant="outline" className="w-full" asChild>
+          <Link href="/login/github" prefetch={false}>
+            <GitHubLogoIcon className="mr-2 h-5 w-5" />
+            Log in with GitHub
+          </Link>
+        </Button>
+        </div>
         <div className="my-2 flex items-center">
           <div className="flex-grow border-t border-muted" />
           <div className="mx-2 text-muted-foreground">or</div>

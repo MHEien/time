@@ -64,7 +64,7 @@ TIME is a modern web application built with Next.js, TypeScript, and Tailwind CS
     ├── next.config.js
     ├── package.json
     ├── playwright.config.ts
-    ├── pnpm-lock.yaml
+    ├── bun-lock.yaml
     ├── postcss.config.cjs
     ├── prettier.config.js
     ├── README.md
@@ -121,7 +121,7 @@ TIME is a modern web application built with Next.js, TypeScript, and Tailwind CS
 ### 🔖 Prerequisites
 
 - Node.js: `v14.0.0 or later`
-- pnpm: `v6.0.0 or later`
+- bun: `v6.0.0 or later`
 
 ### 📦 Installation
 
@@ -137,7 +137,7 @@ cd time
 
 3. Install the required dependencies:
 ```sh
-pnpm install
+bun install
 ```
 
 ### 🤖 Usage
@@ -145,19 +145,19 @@ pnpm install
 To run the development server:
 
 ```sh
-pnpm dev
+bun dev
 ```
 
 To build the project for production:
 
 ```sh
-pnpm build
+bun build
 ```
 
 To start the production server:
 
 ```sh
-pnpm start
+bun start
 ```
 
 ### 🧪 Tests
@@ -165,7 +165,7 @@ pnpm start
 Run e2e tests using Playwright:
 
 ```sh
-pnpm test:e2e
+bun test:e2e
 ```
 
 ---

@@ -1,16 +1,24 @@
-import CalendarComponent from "../_components/calendar";
+import CalendarPage from './_components/calendar';
 import { api } from '@/trpc/server';
 
 export const dynamic = "force-dynamic";
 
-export default async function CalendarPage() {
+export default async function Page() {
 
-  const initialEvents = await api.calendar.myEvents.query({}) 
+  //Start date is 3 months ago
+  const startDate = new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString();
+  //End date is 2 months from today
+  const endDate = new Date(new Date().setDate(new Date().getDate() + 14)).toISOString();
+
+  const initialEvents = await api.calendar.getByDateRange.query({
+    startDate,
+    endDate
+  }) 
 
   const aiSuggestions = await api.aiSuggestions.myEvents.query({})
 
   return (
-      <CalendarComponent initialEvents={initialEvents} initialAiSuggestions={aiSuggestions} />
+      <CalendarPage initialEvents={initialEvents} initialAiSuggestions={aiSuggestions} />
   );
 }
 

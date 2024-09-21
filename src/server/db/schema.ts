@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   pgTableCreator,
   serial,
+  bigint,
   boolean,
   index,
   text,
@@ -10,6 +11,8 @@ import {
   time,
   integer,
   interval,
+  uniqueIndex,
+  unique,
 } from "drizzle-orm/pg-core";
 import { DATABASE_PREFIX as prefix } from "@/lib/constants";
 
@@ -19,7 +22,7 @@ export const users = pgTable(
   "users",
   {
     id: varchar("id", { length: 21 }).primaryKey(),
-    discordId: varchar("discord_id", { length: 255 }).unique(),
+    name: varchar("name", { length: 255 }),
     email: varchar("email", { length: 255 }).unique().notNull(),
     emailVerified: boolean("email_verified").default(false).notNull(),
     hashedPassword: varchar("hashed_password", { length: 255 }),
@@ -33,12 +36,46 @@ export const users = pgTable(
   },
   (t) => ({
     emailIdx: index("user_email_idx").on(t.email),
-    discordIdx: index("user_discord_idx").on(t.discordId),
   }),
 );
 
+export const oauthAccounts = pgTable(
+  "oauth_accounts",
+  {
+    id: varchar("id", { length: 21 }).primaryKey(),
+    userId: varchar("user_id", { length: 21 }).notNull(),
+    username: varchar("username", { length: 255 }),
+    provider: varchar("provider", { length: 50 }).notNull(),
+    providerId: varchar("provider_id", { length: 255 }).notNull(),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token"),
+    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).$onUpdate(() => new Date()),
+  },
+  (t) => ({
+    userIdx: index("oauth_account_user_idx").on(t.userId),
+    providerIdx: index("oauth_account_provider_idx").on(t.provider),
+    userProviderUnique: uniqueIndex("user_provider_unique_idx").on(t.userId, t.provider),
+    providerIdUnique: uniqueIndex("provider_id_unique_idx").on(t.provider, t.providerId),
+  }),
+);
+
+export const oauthAccountRelations = relations(oauthAccounts, ({ one }) => ({
+  user: one(users, {
+    fields: [oauthAccounts.userId],
+    references: [users.id],
+  }),
+}));
+
+export const userRelations = relations(users, ({ many }) => ({
+  oauthAccounts: many(oauthAccounts),
+}));
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type OAuthAccount = typeof oauthAccounts.$inferSelect;
+export type NewOAuthAccount = typeof oauthAccounts.$inferInsert;
 
 export const sessions = pgTable(
   "sessions",
@@ -195,7 +232,7 @@ export const projectRelations = relations(projects, ({ one, many }) => ({
 export const calendarEvents = pgTable(
   "calendar_events",
   {
-    id: varchar("id", { length: 15 }).primaryKey(),
+    id: varchar("id", { length: 255 }).primaryKey(),
     userId: varchar("user_id", { length: 21 }).notNull(),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
@@ -224,7 +261,7 @@ export const calendarEventRelations = relations(calendarEvents, ({ one }) => ({
 export const aiSuggestedEvents = pgTable(
   "ai_suggested_events",
   {
-    id: varchar("id", { length: 15 }).primaryKey(),
+    id: varchar("id", { length: 30 }).primaryKey(),
     userId: varchar("user_id", { length: 21 }).notNull(),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
@@ -236,6 +273,7 @@ export const aiSuggestedEvents = pgTable(
     status: varchar("status", { length: 20, enum: ["pending", "accepted", "rejected"] }).default("pending"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).$onUpdate(() => new Date()),
+    feedback: text("feedback"),
   },
   (t) => ({
     userIdx: index("ai_suggested_event_user_idx").on(t.userId),
@@ -306,27 +344,66 @@ export const userSettingsRelations = relations(userSettings, ({ one }) => ({
   }),
 }));
 
-export const integrationTokens = pgTable(
-  "integration_tokens",
-  {
-    id: varchar("id", { length: 15 }).primaryKey(),
-    userId: varchar("user_id", { length: 21 }).notNull(),
-    integrationType: varchar("integration_type", { length: 50 }).notNull(),
-    accessToken: text("access_token").notNull(),
-    refreshToken: text("refresh_token"),
-    expiresAt: timestamp("expires_at", { withTimezone: true, mode: "date" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { mode: "date" }).$onUpdate(() => new Date()),
-  },
-  (t) => ({
-    userIdx: index("integration_token_user_idx").on(t.userId),
-    integrationTypeIdx: index("integration_token_type_idx").on(t.integrationType),
-  }),
-);
 
-export const integrationTokenRelations = relations(integrationTokens, ({ one }) => ({
-  user: one(users, {
-    fields: [integrationTokens.userId],
-    references: [users.id],
-  }),
-}))
+export const githubIssues = pgTable("github_issues", {
+  id: varchar("id", { length: 15 }).primaryKey(),
+  userId: varchar("user_id", { length: 21 }).notNull(),
+  projectId: varchar("project_id", { length: 15 }),
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body"),
+  status: varchar("status", { length: 20 }).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+  githubId: bigint("github_id", { mode: 'bigint' }).notNull(),
+  githubUrl: varchar("github_url", { length: 255 }).notNull(),
+}, (table) => ({
+  uniqueGithubIssue: unique().on(table.githubId, table.userId),
+  userIdIdx: index("github_issues_user_id_idx").on(table.userId),
+  projectIdIdx: index("github_issues_project_id_idx").on(table.projectId),
+}));
+
+export const githubPullRequests = pgTable("github_pull_requests", {
+  id: varchar("id", { length: 15 }).primaryKey(),
+  userId: varchar("user_id", { length: 21 }).notNull(),
+  projectId: varchar("project_id", { length: 15 }),
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body"),
+  status: varchar("status", { length: 20 }).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
+  githubId: bigint("github_id", { mode: 'bigint' }).notNull(), // Changed to bigint for consistency
+  githubUrl: varchar("github_url", { length: 255 }).notNull(),
+}, (table) => ({
+  uniqueGithubPR: unique().on(table.githubId, table.userId),
+  userIdIdx: index("github_pull_requests_user_id_idx").on(table.userId),
+  projectIdIdx: index("github_pull_requests_project_id_idx").on(table.projectId),
+}));
+
+export const githubCommits = pgTable("github_commits", {
+  id: varchar("id", { length: 15 }).primaryKey(),
+  userId: varchar("user_id", { length: 21 }).notNull(),
+  projectId: varchar("project_id", { length: 15 }),
+  message: text("message").notNull(),
+  sha: varchar("sha", { length: 40 }).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  githubUrl: varchar("github_url", { length: 255 }).notNull(),
+}, (table) => ({
+  uniqueGithubCommit: unique().on(table.sha, table.userId),
+  userIdIdx: index("github_commits_user_id_idx").on(table.userId),
+  projectIdIdx: index("github_commits_project_id_idx").on(table.projectId),
+}));
+
+export const githubRelations = relations(githubIssues, ({ one }) => ({
+  user: one(users, { fields: [githubIssues.userId], references: [users.id] }),
+  project: one(projects, { fields: [githubIssues.projectId], references: [projects.id] }),
+}));
+
+export const githubPullRequestRelations = relations(githubPullRequests, ({ one }) => ({
+  user: one(users, { fields: [githubPullRequests.userId], references: [users.id] }),
+  project: one(projects, { fields: [githubPullRequests.projectId], references: [projects.id] }),
+}));
+
+export const githubCommitRelations = relations(githubCommits, ({ one }) => ({
+  user: one(users, { fields: [githubCommits.userId], references: [users.id] }),
+  project: one(projects, { fields: [githubCommits.projectId], references: [projects.id] }),
+}));

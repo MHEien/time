@@ -5,6 +5,7 @@ import { useState } from "react";
 
 export const HoverEffect = ({
   items,
+  columns,
   className,
 }: {
   items: {
@@ -12,6 +13,7 @@ export const HoverEffect = ({
     description: string;
     link: string;
   }[];
+  columns?: number;
   className?: string;
 }) => {
   let [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -19,7 +21,7 @@ export const HoverEffect = ({
   return (
     <div
       className={cn(
-        "grid grid-cols-1 md:grid-cols-2  lg:grid-cols-3  py-10",
+        `grid grid-cols-1 md:grid-cols-2  lg:grid-cols-${columns ?? 3}  py-10`,
         className
       )}
     >

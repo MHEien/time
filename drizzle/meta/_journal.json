@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1726669245971,
-      "tag": "0000_cool_stepford_cuckoos",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1726670224228,
-      "tag": "0001_brainy_smasher",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1726672409634,
-      "tag": "0002_icy_maximus",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1726742375021,
-      "tag": "0003_abandoned_skin",
+      "when": 1726942148905,
+      "tag": "0000_tough_omega_red",
       "breakpoints": true
     }
   ]

@@ -8,7 +8,7 @@ import type {
   GetWakatimeDataSummaryInput,
 } from "./wakatime.input";
 import { wakatimeData } from "@/server/db/schema";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 export const listWakatimeData = async (ctx: ProtectedTRPCContext, input: ListWakatimeDataInput) => {
   return ctx.db.query.wakatimeData.findMany({

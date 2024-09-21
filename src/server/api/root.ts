@@ -10,6 +10,8 @@ import { projectRouter } from "./routers/project/project.procedure";
 import { userSettingsRouter } from "./routers/user-settings/user-settings.procedure";
 import { wakatimeDataRouter } from "./routers/wakatime/wakatime.procedure";
 import { integrationTokensRouter } from "./routers/integration-tokens/integration-tokens.procedure";
+import { outlookCalendarRouter } from "./routers/integrations/integrations.procedure";
+import { githubRouter } from "./routers/github/github.procedure";
 
 export const appRouter = createTRPCRouter({
   user: userRouter,
@@ -22,7 +24,9 @@ export const appRouter = createTRPCRouter({
   integrationTokens: integrationTokensRouter,
   project: projectRouter,
   userSettings: userSettingsRouter,
-  wakatime: wakatimeDataRouter
+  wakatime: wakatimeDataRouter,
+  outlookCalendar: outlookCalendarRouter,
+  github: githubRouter,
 });
 
 export type AppRouter = typeof appRouter;

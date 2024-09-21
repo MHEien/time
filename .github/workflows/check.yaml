@@ -17,19 +17,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: pnpm/action-setup@v2
+      - uses: oven-sh/setup-bun@v2
         with:
-          version: 9
+          version: latest
       - uses: actions/setup-node@v3
-        with:
-          node-version: 20.x
-          cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Type Check and Lint
-        run: pnpm run typecheck && pnpm run lint
+        run: bun run typecheck && bun run lint
         env:
           SKIP_ENV_VALIDATION: true
 
@@ -42,6 +39,9 @@ jobs:
       DATABASE_URL: ${{secrets.DATABASE_URL}}
       DISCORD_CLIENT_ID: ${{secrets.DISCORD_CLIENT_ID}}
       DISCORD_CLIENT_SECRET: ${{secrets.DISCORD_CLIENT_SECRET}}
+      MICROSOFT_ENTRA_ID_TENANT_ID: ${{secrets.MICROSOFT_ENTRA_ID_TENANT_ID}}
+      MICROSOFT_ENTRA_ID_CLIENT_ID: ${{secrets.MICROSOFT_ENTRA_ID_CLIENT_ID}}
+      MICROSOFT_ENTRA_ID_CLIENT_SECRET: ${{secrets.MICROSOFT_ENTRA_ID_CLIENT_SECRET}}
       MOCK_SEND_EMAIL: "true"
       SMTP_HOST: host
       SMTP_PORT: 587
@@ -54,21 +54,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: pnpm/action-setup@v2
+      - uses: oven-sh/setup-bun@v2
         with:
-          version: 9
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 20.x
-          cache: "pnpm"
+          version: latest
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
       - name: Build the app
-        run: pnpm build
+        run: bun run build 
       - name: Install Playwright Browsers
-        run: pnpm exec playwright install chromium --with-deps
+        run: bun run playwright install chromium --with-deps
       - name: Run Playwright tests
-        run: pnpm exec playwright test
+        run: bun run playwright test
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,24 +1,28 @@
 import { generateId } from "lucia";
 import type { ProtectedTRPCContext } from "../../trpc";
 import type {
-  ListIntegrationTokensInput,
-  GetIntegrationTokenInput,
-  CreateIntegrationTokenInput,
-  UpdateIntegrationTokenInput,
-  DeleteIntegrationTokenInput,
+  AddOauthAccountInput,
+  UpdateOauthAccountInput,
+  DeleteOauthAccountInput,
+  MyOauthAccountsInput,
 } from "./integration-tokens.input";
-import { integrationTokens } from "@/server/db/schema";
+import { oauthAccounts } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 
-export const listIntegrationTokens = async (ctx: ProtectedTRPCContext, input: ListIntegrationTokensInput) => {
-  return ctx.db.query.integrationTokens.findMany({
+export const myOauthAccounts = async (ctx: ProtectedTRPCContext, input: MyOauthAccountsInput) => {
+  return ctx.db.query.oauthAccounts.findMany({
     where: (table, { eq }) => eq(table.userId, ctx.user.id),
+    orderBy: (table, { desc }) => [desc(table.createdAt)],
     limit: input.perPage,
     offset: (input.page - 1) * input.perPage,
-    orderBy: (table, { desc }) => [desc(table.createdAt)],
     columns: {
       id: true,
-      integrationType: true,
+      userId: true,
+      username: true,
+      provider: true,
+      providerId: true,
+      accessToken: true,
+      refreshToken: true,
       expiresAt: true,
       createdAt: true,
       updatedAt: true,
@@ -26,46 +30,39 @@ export const listIntegrationTokens = async (ctx: ProtectedTRPCContext, input: Li
   });
 };
 
-export const getIntegrationToken = async (ctx: ProtectedTRPCContext, input: GetIntegrationTokenInput) => {
-  return ctx.db.query.integrationTokens.findFirst({
-    where: (table, { and, eq }) => and(eq(table.id, input.id), eq(table.userId, ctx.user.id)),
-  });
-};
-
-export const createIntegrationToken = async (ctx: ProtectedTRPCContext, input: CreateIntegrationTokenInput) => {
-  const id = generateId(15);
-
-  const [token] = await ctx.db.insert(integrationTokens).values({
-    id,
+export const addOauthAccount = async (ctx: ProtectedTRPCContext, input: AddOauthAccountInput) => {
+  const [account] = await ctx.db.insert(oauthAccounts).values({
+    id: generateId(21),
     userId: ctx.user.id,
-    integrationType: input.integrationType,
+    username: input.username,
     accessToken: input.accessToken,
-    refreshToken: input.refreshToken,
+    provider: input.provider,
+    providerId: input.providerId,
+    refreshToken: input.refreshToken ?? null,
     expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
   }).returning();
 
-  return token;
+  return account;
 };
 
-export const updateIntegrationToken = async (ctx: ProtectedTRPCContext, input: UpdateIntegrationTokenInput) => {
-  const [token] = await ctx.db
-    .update(integrationTokens)
+export const updateOauthAccount = async (ctx: ProtectedTRPCContext, input: UpdateOauthAccountInput) => {
+  const [account] = await ctx.db
+    .update(oauthAccounts)
     .set({
-      accessToken: input.accessToken,
-      refreshToken: input.refreshToken,
+      ...input,
       expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
     })
-    .where(and(eq(integrationTokens.id, input.id), eq(integrationTokens.userId, ctx.user.id)))
+    .where(and(eq(oauthAccounts.userId, ctx.user.id), eq(oauthAccounts.providerId, input.providerId)))
     .returning();
-
-  return token;
+    
+  return account;
 };
 
-export const deleteIntegrationToken = async (ctx: ProtectedTRPCContext, input: DeleteIntegrationTokenInput) => {
-  const [token] = await ctx.db
-    .delete(integrationTokens)
-    .where(and(eq(integrationTokens.id, input.id), eq(integrationTokens.userId, ctx.user.id)))
+export const deleteOauthAccount = async (ctx: ProtectedTRPCContext, input: DeleteOauthAccountInput) => {
+  const [account] = await ctx.db
+    .delete(oauthAccounts)
+    .where(and(eq(oauthAccounts.userId, ctx.user.id), eq(oauthAccounts.providerId, input.providerId)))
     .returning();
-
-  return token;
-};
+    
+  return account;
+}

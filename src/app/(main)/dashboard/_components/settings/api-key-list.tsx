@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { api } from "@/trpc/react";
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { RouterOutputs } from '@/trpc/shared';
+import type { RouterOutputs } from '@/trpc/shared';
 
 interface ApiKeyListProps {
   initialKeys: RouterOutputs['apiKey']['list']

@@ -103,6 +103,7 @@ export {
   ArchiveIcon,
   ResetIcon,
   DiscordLogoIcon,
+  StitchesLogoIcon,
   FileTextIcon,
   IdCardIcon,
   PlusCircledIcon,
@@ -112,5 +113,10 @@ export {
   ChevronRightIcon,
   DotsHorizontalIcon,
   ArrowLeftIcon,
-  CalendarIcon
+  CalendarIcon,
+  PersonIcon,
+  GlobeIcon,
+  OpenInNewWindowIcon,
+  ChevronDownIcon,
+  GitHubLogoIcon
 } from "@radix-ui/react-icons";

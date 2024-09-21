@@ -1,5 +1,5 @@
 import { Lucia, TimeSpan } from "lucia";
-import { Discord } from "arctic";
+import { Discord, MicrosoftEntraId, GitHub } from "arctic";
 import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle";
 import { env } from "@/env.js";
 import { db } from "@/server/db";
@@ -30,7 +30,7 @@ export const lucia = new Lucia(adapter, {
   sessionCookie: {
     name: "session",
 
-    expires: false, // session cookies have very long lifespan (2 years)
+    expires: false,
     attributes: {
       secure: env.NODE_ENV === "production",
     },
@@ -41,6 +41,19 @@ export const discord = new Discord(
   env.DISCORD_CLIENT_ID,
   env.DISCORD_CLIENT_SECRET,
   absoluteUrl("/login/discord/callback")
+);
+
+export const entraId = new MicrosoftEntraId(
+  env.MICROSOFT_ENTRA_ID_TENANT_ID!,
+  env.MICROSOFT_ENTRA_ID_CLIENT_ID!,
+  env.MICROSOFT_ENTRA_ID_CLIENT_SECRET!,
+  absoluteUrl("/login/entraId/callback")
+);
+
+export const github = new GitHub(
+  env.GITHUB_CLIENT_ID,
+  env.GITHUB_CLIENT_SECRET,
+  { redirectURI: absoluteUrl("/login/github/callback") }
 );
 
 declare module "lucia" {
