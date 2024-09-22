@@ -46,6 +46,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
   const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null)
   const [viewType, setViewType] = useState<ViewType>('month')
 
+  const { mutateAsync, isLoading } = api.aiSuggestions.generateNextWeekEvents.useMutation()
+
   const router = useRouter();
 
   const aiSuggestions = useMemo(() => {
@@ -169,6 +171,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
     setDraggedEvent(event)
   }
 
+
   const handleDragEnd = (day: Date, hour?: number) => {
     if (draggedEvent && !draggedEvent.externalCalendarId) {
       let newStartTime: Date
@@ -233,8 +236,12 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
               */
             </DropdownMenuContent>
           </DropdownMenu>
-          <button className="ml-auto" onClick={() => generateSchedule().then(() => router.refresh())}>
-            test
+          <button className="ml-auto" 
+          disabled={isLoading}
+          onClick={() => 
+          mutateAsync({}).then(() => router.refresh())
+          }>
+            Generate Schedule
           </button>
         </div>
       </motion.div>

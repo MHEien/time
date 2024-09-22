@@ -21,6 +21,10 @@ export async function getGithubData() {
   const prs = await api.github.myPRs.query({});
   const commits = await api.github.myCommits.query({});
 
+  console.log("Issues:", issues);
+  console.log("PRs:", prs);
+  console.log("Commits:", commits);
+
   return { issues, prs, commits };
 }
 

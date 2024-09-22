@@ -31,7 +31,6 @@ export const myGithubIssues = async (ctx: ProtectedTRPCContext, input: MyGithubI
 export const myGithubCommits = async (ctx: ProtectedTRPCContext, input: MyGithubCommitsInput) => {
   return ctx.db.query.githubCommits.findMany({
     where: (table, { eq }) => eq(table.userId, ctx.user.id),
-    offset: (input.page - 1) * input.perPage,
     limit: input.perPage,
     orderBy: (table, { desc }) => [desc(table.createdAt)],
   });
