@@ -10,7 +10,7 @@
     "db:generate": "dotenv drizzle-kit generate",
     "db:migrate": "dotenv drizzle-kit migrate",
     "db:studio": "dotenv drizzle-kit studio",
-    "pages:build": "bunx @cloudflare/next-on-pages",
+    "pages:build": "bunx @cloudflare/next-on-pages@1",
     "preview": "bun run pages:build && wrangler pages dev",
     "deploy": "bun run pages:build && wrangler pages deploy",
     "dev": "next dev",
