@@ -7,7 +7,7 @@ export const metadata = {
   title: "Login",
   description: "Login Page",
 };
-export const runtime = 'edge';
+
 export default async function LoginPage() {
   const { user } = await validateRequest();
 

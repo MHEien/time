@@ -4,7 +4,7 @@ import { discord, entraId, github } from "@/lib/auth";
 import { env } from "@/env";
 
 type OAuthProviderName = "discord" | "entraId" | "github";
-export const runtime = 'edge';
+
 interface BaseOAuthProviderConfig {
   scopes: string[];
 }

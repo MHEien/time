@@ -7,7 +7,7 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    DATABASE_URL: z
+    POSTGRES_URL: z
       .string()
       .url()
       .refine(
@@ -47,7 +47,7 @@ export const env = createEnv({
    */
   runtimeEnv: {
     // Server-side env vars
-    DATABASE_URL: process.env.DATABASE_URL,
+    POSTGRES_URL: process.env.POSTGRES_URL,
     NODE_ENV: process.env.NODE_ENV,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     MOCK_SEND_EMAIL: process.env.MOCK_SEND_EMAIL === "true" || process.env.MOCK_SEND_EMAIL === "1",

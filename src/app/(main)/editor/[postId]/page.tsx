@@ -12,7 +12,7 @@ interface Props {
     postId: string;
   };
 }
-export const runtime = 'edge';
+
 export default async function EditPostPage({ params }: Props) {
   const { user } = await validateRequest();
   if (!user) redirect(Paths.Login);

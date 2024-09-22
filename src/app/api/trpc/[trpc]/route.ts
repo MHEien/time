@@ -10,7 +10,7 @@ import { createTRPCContext } from "@/server/api/trpc";
  * handling a HTTP request (e.g. when you make requests from Client Components).
  */
 
-export const runtime = "edge";
+//export const runtime = "edge";
 
 const createContext = async (req: NextRequest) => {
   return createTRPCContext({ headers: req.headers });

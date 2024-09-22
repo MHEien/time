@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: "Posts",
   description: "Manage your posts here",
 };
-export const runtime = 'edge';
+
 interface Props {
   searchParams: Record<string, string | string[] | undefined>;
 }

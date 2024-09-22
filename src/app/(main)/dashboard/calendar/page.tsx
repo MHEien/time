@@ -2,7 +2,7 @@ import CalendarPage from './_components/calendar';
 import { api } from '@/trpc/server';
 
 export const dynamic = "force-dynamic";
-export const runtime = 'edge';
+
 export default async function Page() {
 
   //Start date is 3 months ago
