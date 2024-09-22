@@ -1,6 +1,7 @@
 {
   "name": "next-lucia-auth",
   "version": "0.1.0",
+  "resolutions": { "string-width": "4.2.3" },
   "private": true,
   "type": "module",
   "scripts": {
