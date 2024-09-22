@@ -14,7 +14,7 @@ export const metadata = {
   title: "Verify Email",
   description: "Verify Email Page",
 };
-
+export const runtime = 'edge';
 export default async function VerifyEmailPage() {
   const { user } = await validateRequest();
 

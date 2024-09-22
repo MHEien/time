@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "Billing",
   description: "Manage your billing and subscription",
 };
-
+export const runtime = 'edge';
 export default async function BillingPage() {
   const { user } = await validateRequest();
 

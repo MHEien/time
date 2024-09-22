@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { handleOAuthCallback } from "@/lib/auth/auth-utils";
 import type { OAuthProvider } from "@/lib/auth/auth-utils";
 import { lucia } from "@/lib/auth";
-
+export const runtime = 'edge';
 export async function GET(
   request: Request,
   { params }: { params: { provider: OAuthProvider["name"] } }

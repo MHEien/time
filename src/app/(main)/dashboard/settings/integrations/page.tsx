@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   title: "Integrations",
   description: "Manage your integrations and API keys",
 };
-
+export const runtime = 'edge';
 export default async function IntegrationsPage() {
   const { user } = await validateRequest();
 

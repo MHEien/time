@@ -6,6 +6,8 @@ import type { RouterOutputs } from '@/trpc/shared';
 
 type Activity = RouterOutputs['activity']['myActivities'][number];
 
+export const runtime = 'edge';
+
 export async function POST(req: NextRequest) {
 
     const apiKey = headers().get('x-api-key');

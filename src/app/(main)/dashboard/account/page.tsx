@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Paths } from "@/lib/constants";
 import { api } from "@/trpc/server";
 import { Account } from "./_components/account";
+export const runtime = 'edge';
 
 export default async function AccountPage() {
 

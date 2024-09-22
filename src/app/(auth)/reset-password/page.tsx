@@ -14,7 +14,7 @@ export const metadata = {
   title: "Forgot Password",
   description: "Forgot Password Page",
 };
-
+export const runtime = 'edge';
 export default async function ForgotPasswordPage() {
   const { user } = await validateRequest();
 
