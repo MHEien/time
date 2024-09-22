@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { TRPCReactProvider } from "@/trpc/react";
 import type { Metadata, Viewport } from "next";
 
+export const runtime = "edge";
+
 export const metadata: Metadata = {
   title: {
     default: APP_TITLE,
