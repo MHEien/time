@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { BackgroundGradient } from '@/components/ui/background-gradient'
 import { HoverEffect } from '@/components/ui/card-hover-effect'
@@ -60,7 +60,6 @@ const DataItem = ({ item, type }: { item: Issue | PullRequest | Commit; type: ke
 
 export default function GitHubDataManager({ initialData }: { initialData: GitHubData }) {
   const [activeTab, setActiveTab] = useState<keyof GitHubData>('issues')
-  const [isQuerying, setIsQuerying] = useState(false)
 
   const router = useRouter()
 

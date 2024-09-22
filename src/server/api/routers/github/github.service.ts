@@ -8,7 +8,8 @@ import type {
 import { githubCommits, githubIssues, githubPullRequests, oauthAccounts  } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Octokit } from "@octokit/rest";
-import { db } from "@/server/db";
+import { embedData } from "../../fetch-and-embed";
+import type { EmbeddableData } from "../../fetch-and-embed";
 
 export const myGithubPRs = async (ctx: ProtectedTRPCContext, input: MyGithubPRsInput) => {
   return ctx.db.query.githubPullRequests.findMany({
@@ -74,6 +75,8 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
     reposProcessed: 0
   };
 
+  const dataToEmbed: EmbeddableData[] = [];
+
   for (const repoFullName of recentRepos) {
     const [owner, repo] = repoFullName?.split('/') ?? [];
 
@@ -93,8 +96,9 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
 
     for (const issue of issues) {
       if (!issue.pull_request) { // Ensure it's not a PR
-        await db.insert(githubIssues).values({
-          id: generateId(15),
+        const issueId = generateId(15);
+        await ctx.db.insert(githubIssues).values({
+          id: issueId,
           userId: ctx.user.id,
           title: issue.title ?? '',
           body: issue.body ?? '',
@@ -114,6 +118,19 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
           }
         });
         summary.totalIssues++;
+
+        dataToEmbed.push({
+          id: issueId,
+          type: 'github_issue',
+          content: `${issue.title}\n\n${issue.body ?? ''}`,
+          metadata: {
+            status: issue.state,
+            createdAt: issue.created_at,
+            updatedAt: issue.updated_at,
+            githubId: issue.number,
+            githubUrl: issue.html_url,
+          }
+        });
       }
     }
 
@@ -128,8 +145,9 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
 
     for (const pr of prs) {
       if (new Date(pr.updated_at) >= threeWeeksAgo) {
-        await db.insert(githubPullRequests).values({
-          id: generateId(15),
+        const prId = generateId(15);
+        await ctx.db.insert(githubPullRequests).values({
+          id: prId,
           userId: ctx.user.id,
           title: pr.title,
           body: pr.body ?? '',
@@ -149,6 +167,20 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
           }
         });
         summary.totalPullRequests++;
+/*
+        dataToEmbed.push({
+          id: prId,
+          type: 'github_pull_request',
+          content: `${pr.title}\n\n${pr.body ?? ''}`,
+          metadata: {
+            status: pr.state,
+            createdAt: pr.created_at,
+            updatedAt: pr.updated_at,
+            githubId: pr.number,
+            githubUrl: pr.html_url,
+          }
+        });
+        */
       }
     }
 
@@ -162,8 +194,9 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
 
     for (const commit of commits) {
       const authorDate = commit.commit.author?.date ? new Date(commit.commit.author.date) : new Date();
-      await db.insert(githubCommits).values({
-        id: generateId(15),
+      const commitId = generateId(15);
+      await ctx.db.insert(githubCommits).values({
+        id: commitId,
         userId: ctx.user.id,
         message: commit.commit.message,
         sha: commit.sha,
@@ -178,7 +211,26 @@ export async function fetchGitHubData(ctx: ProtectedTRPCContext) {
         }
       });
       summary.totalCommits++;
+
+      dataToEmbed.push({
+        id: commitId,
+        type: 'github_commit',
+        content: commit.commit.message,
+        metadata: {
+          sha: commit.sha,
+          createdAt: authorDate.toISOString(),
+          githubUrl: commit.html_url,
+        }
+      });
     }
+  }
+
+  // Embed the data
+  try {
+    await embedData(dataToEmbed);
+  } catch (error) {
+    console.error("Error embedding data:", error);
+    // You might want to handle this error more gracefully depending on your requirements
   }
 
   return summary;

@@ -2,6 +2,8 @@ import type { ProtectedTRPCContext } from "../../trpc";
 import { calendarEvents, oauthAccounts } from "@/server/db/schema";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { getUserCalendar } from "./m-graph";
+import { embedData } from "../../fetch-and-embed";
+import type { EmbeddableData } from "../../fetch-and-embed";
 
 export const fetchOutlookCalendarEvents = async (ctx: ProtectedTRPCContext) => {
   // Set date range for fetching events
@@ -28,7 +30,7 @@ export const fetchOutlookCalendarEvents = async (ctx: ProtectedTRPCContext) => {
       gte(calendarEvents.startTime, startDate),
       lte(calendarEvents.endTime, endDate)
     ),
-    orderBy: (table, { desc }) => [desc(calendarEvents.startTime)],
+    orderBy: (table, { desc }) => [desc(table.startTime)],
   });
 
   // Prepare events to be inserted or updated
@@ -46,6 +48,8 @@ export const fetchOutlookCalendarEvents = async (ctx: ProtectedTRPCContext) => {
     );
   });
 
+  const dataToEmbed: EmbeddableData[] = [];
+
   // Insert new events if needed
   if (eventsToInsert.length) {
     await ctx.db.insert(calendarEvents).values(
@@ -60,6 +64,18 @@ export const fetchOutlookCalendarEvents = async (ctx: ProtectedTRPCContext) => {
         location: event.location?.displayName ?? '',
       }))
     );
+
+    // Prepare inserted events for embedding
+    dataToEmbed.push(...eventsToInsert.map(event => ({
+      id: event.id,
+      type: 'outlook_calendar_event',
+      content: `${event.subject}\n\n${event.bodyPreview}`,
+      metadata: {
+        startTime: event.start.dateTime,
+        endTime: event.end.dateTime,
+        location: event.location?.displayName ?? '',
+      }
+    })));
   }
 
   // Update existing events if needed
@@ -74,7 +90,27 @@ export const fetchOutlookCalendarEvents = async (ctx: ProtectedTRPCContext) => {
           location: event.location?.displayName ?? '',
         })
         .where(eq(calendarEvents.externalCalendarId, event.id));
+
+      // Prepare updated events for embedding
+      dataToEmbed.push({
+        id: event.id,
+        type: 'outlook_calendar_event',
+        content: `${event.subject}\n\n${event.bodyPreview}`,
+        metadata: {
+          startTime: event.start.dateTime,
+          endTime: event.end.dateTime,
+          location: event.location?.displayName ?? '',
+        }
+      });
     }
+  }
+
+  // Embed the data
+  try {
+    await embedData(dataToEmbed);
+  } catch (error) {
+    console.error("Error embedding Outlook calendar events:", error);
+    // You might want to handle this error more gracefully depending on your requirements
   }
 
   return { inserted: eventsToInsert, updated: eventsToUpdate };

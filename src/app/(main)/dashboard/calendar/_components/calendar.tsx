@@ -21,7 +21,7 @@ import AgendaView from './agenda-view'
 import AISuggestions from './ai-suggestions'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { syncOutlookCalendar, syncGithub } from '../../actions'
-import { generateSchedule } from '../../actions'
+
 interface CalendarPageProps {
   initialEvents: CalendarEvent[]
   initialAiSuggestions: AiSuggestion[]
@@ -46,7 +46,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
   const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null)
   const [viewType, setViewType] = useState<ViewType>('month')
 
-  const { mutateAsync, isLoading } = api.aiSuggestions.generateNextWeekEvents.useMutation()
+  const { mutateAsync, isLoading } = api.aiSuggestions.generateWorkSchedule.useMutation()
 
   const router = useRouter();
 
