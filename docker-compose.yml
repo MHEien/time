@@ -1,0 +1,38 @@
+version: "3.9"
+services:
+  app:
+    platform: "linux/amd64"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        NEXT_PUBLIC_CLIENTVAR: "clientvar"
+    working_dir: /app
+    ports:
+      - ${PORT}:3000
+    environment:
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+      - POSTGRES_URL=${POSTGRES_URL}
+      - MOCK_SEND_EMAIL=${MOCK_SEND_EMAIL}
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
+      - MICROSOFT_ENTRA_ID_CLIENT_ID=${MICROSOFT_ENTRA_ID_CLIENT_ID}
+      - MICROSOFT_ENTRA_ID_CLIENT_SECRET=${MICROSOFT_ENTRA_ID_CLIENT_SECRET}
+      - MICROSOFT_ENTRA_ID_TENANT_ID=${MICROSOFT_ENTRA_ID_TENANT_ID}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_PRO_MONTHLY_PLAN_ID=${STRIPE_PRO_MONTHLY_PLAN_ID}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - PINECONE_ENVIRONMENT=${PINECONE_ENVIRONMENT}
+      - PINECONE_INDEX=${PINECONE_INDEX}
+    volumes:
+      - .:/app

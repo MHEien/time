@@ -21,6 +21,7 @@ import AgendaView from './agenda-view'
 import AISuggestions from './ai-suggestions'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { syncOutlookCalendar } from '../../actions'
+import QuantumLoader from '@/components/ui/loader'
 
 interface CalendarPageProps {
   initialEvents: CalendarEvent[]
@@ -350,6 +351,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
         className="w-full h-full fixed top-0 left-0 pointer-events-none"
         particleColor="#FFFFFF"
       />
+      {isLoading && <QuantumLoader />}
     </div>
   )
 }
