@@ -23,7 +23,10 @@ CREATE TABLE IF NOT EXISTS "acme_ai_suggested_events" (
 	"status" varchar(20) DEFAULT 'pending',
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp,
-	"feedback" text
+	"feedback" text,
+	"steps" text,
+	"background" text,
+	"challenges" text
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "acme_api_keys" (

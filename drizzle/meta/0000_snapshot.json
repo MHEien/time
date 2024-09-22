@@ -1,5 +1,5 @@
 {
-  "id": "7c342611-788d-453a-a105-94a58a5bd978",
+  "id": "c3d2fe3d-8929-41d2-9747-77010ee7f809",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -179,6 +179,24 @@
         },
         "feedback": {
           "name": "feedback",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "steps": {
+          "name": "steps",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "background": {
+          "name": "background",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "challenges": {
+          "name": "challenges",
           "type": "text",
           "primaryKey": false,
           "notNull": false
