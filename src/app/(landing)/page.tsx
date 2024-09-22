@@ -28,6 +28,10 @@ const navItems = [
     name: "Team",
     link: "#team",
   },
+  {
+    name: "Get Started",
+    link: "/login",
+  },
 ];
 
 const features = [

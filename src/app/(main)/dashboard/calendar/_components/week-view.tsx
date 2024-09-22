@@ -1,7 +1,7 @@
 "use client"
 import React from 'react'
 import { motion } from 'framer-motion'
-import type { CalendarEvent } from '@/types/calendar'
+import type { CalendarEvent, AiSuggestion } from '@/types/calendar'
 import { startOfWeek, endOfWeek, addDays, isSameDay } from 'date-fns'
 import { getEventColor, getEventsForDay } from '@/lib/utils/event-utils'
 
@@ -9,8 +9,9 @@ interface WeekViewProps {
   currentDate: Date
   selectedDate: Date
   events: CalendarEvent[]
+  aiSuggestions: AiSuggestion[]
   onDateClick: (day: Date) => void
-  onEventClick: (event: CalendarEvent) => void
+  onEventClick: (event: CalendarEvent | AiSuggestion) => void
   onDragStart: (event: CalendarEvent) => void
   onDragEnd: (day: Date) => void
 }
@@ -19,6 +20,7 @@ const WeekView: React.FC<WeekViewProps> = ({
   currentDate,
   selectedDate,
   events,
+  aiSuggestions,
   onDateClick,
   onEventClick,
   onDragStart,
@@ -27,15 +29,20 @@ const WeekView: React.FC<WeekViewProps> = ({
   const startDate = startOfWeek(currentDate)
   const endDate = endOfWeek(currentDate)
 
-  const sortEvents = (events: CalendarEvent[]): CalendarEvent[] => {
+  const sortEvents = (events: (CalendarEvent | AiSuggestion)[]): (CalendarEvent | AiSuggestion)[] => {
     return events.sort((a, b) => {
+      const aStartTime = 'startTime' in a ? a.startTime : a.suggestedStartTime
+      const bStartTime = 'startTime' in b ? b.startTime : b.suggestedStartTime
+      const aEndTime = 'endTime' in a ? a.endTime : a.suggestedEndTime
+      const bEndTime = 'endTime' in b ? b.endTime : b.suggestedEndTime
+
       // First, sort by start time (ascending)
-      if (a.startTime.getTime() !== b.startTime.getTime()) {
-        return a.startTime.getTime() - b.startTime.getTime()
+      if (aStartTime.getTime() !== bStartTime.getTime()) {
+        return aStartTime.getTime() - bStartTime.getTime()
       }
       // If start times are the same, sort by duration (shortest first)
-      const aDuration = a.endTime.getTime() - a.startTime.getTime()
-      const bDuration = b.endTime.getTime() - b.startTime.getTime()
+      const aDuration = aEndTime.getTime() - aStartTime.getTime()
+      const bDuration = bEndTime.getTime() - bStartTime.getTime()
       return aDuration - bDuration
     })
   }
@@ -44,7 +51,12 @@ const WeekView: React.FC<WeekViewProps> = ({
     const days = []
     let day = startDate
     while (day <= endDate) {
-      const dayEvents = sortEvents(getEventsForDay(events, day))
+      const dayEvents = getEventsForDay(events, day)
+      const daySuggestions = aiSuggestions.filter(suggestion => 
+        isSameDay(suggestion.suggestedStartTime, day)
+      )
+      const sortedItems = sortEvents([...dayEvents, ...daySuggestions])
+
       days.push(
         <motion.div
           key={day.toString()}
@@ -67,26 +79,29 @@ const WeekView: React.FC<WeekViewProps> = ({
           }}
         >
           <span className="text-sm font-semibold">{day.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' })}</span>
-          {dayEvents.map(event => (
-            <motion.div 
-              key={event.id} 
-              className={`text-xs ${getEventColor(event)} text-white p-1 mt-1 rounded ${event.externalCalendarId ? 'cursor-default' : 'cursor-move'}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              draggable={!event.externalCalendarId}
-              onDragStart={(e) => {
-                e.stopPropagation()
-                if (!event.externalCalendarId) onDragStart(event)
-              }}
-              onClick={(e) => {
-                e.stopPropagation()
-                onEventClick(event)
-              }}
-            >
-              {event.title}
-            </motion.div>
-          ))}
+          {sortedItems.map(item => {
+            const isAiSuggestion = 'suggestedStartTime' in item
+            return (
+              <motion.div 
+                key={item.id} 
+                className={`text-xs ${isAiSuggestion ? 'bg-indigo-600' : getEventColor(item)} text-white p-1 mt-1 rounded ${isAiSuggestion || (item).externalCalendarId ? 'cursor-pointer' : 'cursor-move'}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                draggable={!isAiSuggestion && !(item).externalCalendarId}
+                onDragStart={(e) => {
+                  e.stopPropagation()
+                  if (!isAiSuggestion && !(item).externalCalendarId) onDragStart(item)
+                }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEventClick(item)
+                }}
+              >
+                {item.title} {isAiSuggestion && '(AI Suggestion)'}
+              </motion.div>
+            )
+          })}
         </motion.div>
       )
       day = addDays(day, 1)

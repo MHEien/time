@@ -35,7 +35,7 @@ const items = [
       },
       {
         title: "Account",
-        href: "/dashboard/settings/account",
+        href: "/dashboard/account",
         icon: UserIcon,
       },
       {

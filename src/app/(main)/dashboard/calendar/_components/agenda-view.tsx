@@ -5,16 +5,16 @@ import { format } from 'date-fns'
 import { X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { CalendarEvent } from '@/types/calendar'
+import type { CalendarEvent, AiSuggestion } from '@/types/calendar'
 import { getEventColor } from '@/lib/utils/event-utils'
 
-
 interface AgendaViewProps {
-  selectedEvent?: CalendarEvent | null
-  setSelectedEvent?: React.Dispatch<React.SetStateAction<CalendarEvent | null>>
+  selectedEvent?: CalendarEvent | AiSuggestion | null
+  setSelectedEvent?: React.Dispatch<React.SetStateAction<CalendarEvent | AiSuggestion | null>>
   selectedDate?: Date
-  selectedAgenda?: CalendarEvent[]
-  setSelectedAgenda?: React.Dispatch<React.SetStateAction<CalendarEvent[]>>
+  selectedAgenda?: (CalendarEvent | AiSuggestion)[]
+  setSelectedAgenda?: React.Dispatch<React.SetStateAction<(CalendarEvent | AiSuggestion)[]>>
+  onSuggestionClick?: (suggestion: AiSuggestion) => void
 }
 
 const AgendaView: React.FC<AgendaViewProps> = ({
@@ -22,19 +22,29 @@ const AgendaView: React.FC<AgendaViewProps> = ({
   setSelectedEvent,
   selectedDate,
   selectedAgenda,
-  setSelectedAgenda
+  setSelectedAgenda,
+  onSuggestionClick
 }) => {
-  const sortEvents = (events: CalendarEvent[]): CalendarEvent[] => {
+  const sortEvents = (events: (CalendarEvent | AiSuggestion)[]): (CalendarEvent | AiSuggestion)[] => {
     return [...events].sort((a, b) => {
+      const aStartTime = 'startTime' in a ? a.startTime : a.suggestedStartTime
+      const bStartTime = 'startTime' in b ? b.startTime : b.suggestedStartTime
+      const aEndTime = 'endTime' in a ? a.endTime : a.suggestedEndTime
+      const bEndTime = 'endTime' in b ? b.endTime : b.suggestedEndTime
+
       // Sort by start time (ascending)
-      if (a.startTime.getTime() !== b.startTime.getTime()) {
-        return a.startTime.getTime() - b.startTime.getTime()
+      if (aStartTime.getTime() !== bStartTime.getTime()) {
+        return aStartTime.getTime() - bStartTime.getTime()
       }
       // If start times are the same, sort by duration (shortest first)
-      const aDuration = a.endTime.getTime() - a.startTime.getTime()
-      const bDuration = b.endTime.getTime() - b.startTime.getTime()
+      const aDuration = aEndTime.getTime() - aStartTime.getTime()
+      const bDuration = bEndTime.getTime() - bStartTime.getTime()
       return aDuration - bDuration
     })
+  }
+
+  const isAiSuggestion = (event: CalendarEvent | AiSuggestion): event is AiSuggestion => {
+    return 'suggestedStartTime' in event
   }
 
   if (selectedEvent) {
@@ -54,16 +64,28 @@ const AgendaView: React.FC<AgendaViewProps> = ({
           <X className="h-4 w-4" />
         </Button>
         <h2 className="text-2xl font-bold mb-4 text-indigo-300">{selectedEvent.title}</h2>
-        <p className="mb-2"><strong className="text-emerald-300">Start:</strong> {format(selectedEvent.startTime, "PPpp")}</p>
-        <p className="mb-2"><strong className="text-emerald-300">End:</strong> {format(selectedEvent.endTime, "PPpp")}</p>
-        <p className="mb-2"><strong className="text-emerald-300">Location:</strong> {selectedEvent.location}</p>
+        <p className="mb-2">
+          <strong className="text-emerald-300">Start:</strong> {format(isAiSuggestion(selectedEvent) ? selectedEvent.suggestedStartTime : selectedEvent.startTime, "PPpp")}
+        </p>
+        <p className="mb-2">
+          <strong className="text-emerald-300">End:</strong> {format(isAiSuggestion(selectedEvent) ? selectedEvent.suggestedEndTime : selectedEvent.endTime, "PPpp")}
+        </p>
+        {!isAiSuggestion(selectedEvent) && (
+          <p className="mb-2"><strong className="text-emerald-300">Location:</strong> {selectedEvent.location}</p>
+        )}
         <p className="mb-4"><strong className="text-emerald-300">Description:</strong> {selectedEvent.description}</p>
-        <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => {
-          // Implement edit functionality
-          console.log("Edit functionality to be implemented")
-        }}>
-          Edit Event
-        </Button>
+        {isAiSuggestion(selectedEvent) ? (
+          <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => onSuggestionClick && onSuggestionClick(selectedEvent)}>
+            Add to Calendar
+          </Button>
+        ) : (
+          <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => {
+            // Implement edit functionality
+            console.log("Edit functionality to be implemented")
+          }}>
+            Edit Event
+          </Button>
+        )}
       </motion.div>
     )
   }
@@ -80,10 +102,18 @@ const AgendaView: React.FC<AgendaViewProps> = ({
         <h2 className="text-2xl font-bold mb-4 text-indigo-300">Agenda for {selectedDate && format(selectedDate, "PPP")}</h2>
         <ScrollArea className="h-60">
           {sortedAgenda.map(event => (
-            <div key={event.id} className={`mb-4 p-2 rounded ${getEventColor(event)} bg-opacity-80`}>
+            <div 
+              key={isAiSuggestion(event) ? event.id : event.id} 
+              className={`mb-4 p-2 rounded ${isAiSuggestion(event) ? 'bg-indigo-600' : getEventColor(event)} bg-opacity-80 cursor-pointer`}
+              onClick={() => setSelectedEvent && setSelectedEvent(event)}
+            >
               <h3 className="font-bold">{event.title}</h3>
-              <p>{format(event.startTime, "p")} - {format(event.endTime, "p")}</p>
-              <p>{event.location}</p>
+              <p>
+                {format(isAiSuggestion(event) ? event.suggestedStartTime : event.startTime, "p")} - 
+                {format(isAiSuggestion(event) ? event.suggestedEndTime : event.endTime, "p")}
+              </p>
+              {!isAiSuggestion(event) && <p>{event.location}</p>}
+              {isAiSuggestion(event) && <p className="text-xs mt-1">AI Suggestion</p>}
             </div>
           ))}
         </ScrollArea>

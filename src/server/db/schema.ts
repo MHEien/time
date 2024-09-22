@@ -274,6 +274,9 @@ export const aiSuggestedEvents = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).$onUpdate(() => new Date()),
     feedback: text("feedback"),
+    steps: text("steps"), 
+    background: text("background"),
+    challenges: text("challenges"),
   },
   (t) => ({
     userIdx: index("ai_suggested_event_user_idx").on(t.userId),
@@ -281,6 +284,7 @@ export const aiSuggestedEvents = pgTable(
   }),
 );
 
+// The relations remain the same
 export const aiSuggestedEventRelations = relations(aiSuggestedEvents, ({ one }) => ({
   user: one(users, {
     fields: [aiSuggestedEvents.userId],

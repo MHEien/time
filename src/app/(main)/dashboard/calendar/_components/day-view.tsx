@@ -1,14 +1,15 @@
 "use client"
 import React from 'react'
 import { motion } from 'framer-motion'
-import type { CalendarEvent } from '@/types/calendar'
+import type { CalendarEvent, AiSuggestion } from '@/types/calendar'
 import { startOfDay, addHours } from 'date-fns'
 import { getEventColor, getEventsForHour } from '@/lib/utils/event-utils'
 
 interface DayViewProps {
   currentDate: Date
   events: CalendarEvent[]
-  onEventClick: (event: CalendarEvent) => void
+  aiSuggestions: AiSuggestion[]
+  onEventClick: (event: CalendarEvent | AiSuggestion) => void
   onDragStart: (event: CalendarEvent) => void
   onDragEnd: (day: Date, hour: number) => void
 }
@@ -16,6 +17,7 @@ interface DayViewProps {
 const DayView: React.FC<DayViewProps> = ({
   currentDate,
   events,
+  aiSuggestions,
   onEventClick,
   onDragStart,
   onDragEnd
@@ -26,6 +28,14 @@ const DayView: React.FC<DayViewProps> = ({
     const hours = []
     for (let i = 0; i < 24; i++) {
       const hour = addHours(startOfDayDate, i)
+      const hourEvents = getEventsForHour(events, hour)
+      const hourSuggestions = aiSuggestions.filter(suggestion => 
+        suggestion.suggestedStartTime.getHours() === hour.getHours() &&
+        suggestion.suggestedStartTime.getDate() === hour.getDate() &&
+        suggestion.suggestedStartTime.getMonth() === hour.getMonth() &&
+        suggestion.suggestedStartTime.getFullYear() === hour.getFullYear()
+      )
+
       hours.push(
         <motion.div
           key={hour.toString()}
@@ -45,7 +55,7 @@ const DayView: React.FC<DayViewProps> = ({
           }}
         >
           <span className="text-sm font-semibold">{hour.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          {getEventsForHour(events, hour).map(event => (
+          {hourEvents.map(event => (
             <motion.div 
               key={event.id} 
               className={`text-xs ${getEventColor(event)} text-white p-1 mt-1 rounded ${event.externalCalendarId ? 'cursor-default' : 'cursor-move'}`}
@@ -60,6 +70,18 @@ const DayView: React.FC<DayViewProps> = ({
               onClick={() => onEventClick(event)}
             >
               {event.title}
+            </motion.div>
+          ))}
+          {hourSuggestions.map(suggestion => (
+            <motion.div 
+              key={suggestion.id} 
+              className="text-xs bg-indigo-600 text-white p-1 mt-1 rounded cursor-pointer"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => onEventClick(suggestion)}
+            >
+              {suggestion.title} (AI Suggestion)
             </motion.div>
           ))}
         </motion.div>

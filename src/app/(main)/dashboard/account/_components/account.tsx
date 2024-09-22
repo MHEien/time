@@ -47,12 +47,12 @@ export function Account({ initialUser }: { initialUser: User }) {
           {
             title: "Profile",
             description: "Manage your personal information",
-            link: '#'
+            onClick: () => console.log("Profile clicked"),
           },
           {
             title: "Subscription",
             description: "View and manage your subscription details",
-            link: '#'
+            onClick: () => console.log("Subscription clicked"),
           }
         ]} />
 

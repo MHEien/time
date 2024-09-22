@@ -20,8 +20,8 @@ import EventModal from './event-modal'
 import AgendaView from './agenda-view'
 import AISuggestions from './ai-suggestions'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { syncOutlookCalendar, syncGithub } from '../../actions'
-import { generateSchedule } from '../../actions'
+import { syncOutlookCalendar } from '../../actions'
+
 interface CalendarPageProps {
   initialEvents: CalendarEvent[]
   initialAiSuggestions: AiSuggestion[]
@@ -41,10 +41,12 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
     isAllDay: false,
   })
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(true)
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
-  const [selectedAgenda, setSelectedAgenda] = useState<CalendarEvent[]>([])
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | AiSuggestion | null>(null)
+  const [selectedAgenda, setSelectedAgenda] = useState<(CalendarEvent | AiSuggestion)[]>([])
   const [draggedEvent, setDraggedEvent] = useState<CalendarEvent | null>(null)
   const [viewType, setViewType] = useState<ViewType>('month')
+
+  const { mutateAsync, isLoading } = api.aiSuggestions.generateWorkSchedule.useMutation()
 
   const router = useRouter();
 
@@ -57,8 +59,13 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
   const onDateClick = (day: Date) => {
     setSelectedDate(day)
     const agenda = events.filter(event => isSameDay(event.startTime, day))
-    setSelectedAgenda(agenda)
+    const suggestions = aiSuggestions.filter(suggestion => isSameDay(suggestion.suggestedStartTime, day))
+    setSelectedAgenda([...agenda, ...suggestions])
     setSelectedEvent(null)
+  }
+
+  const onEventClick = (event: CalendarEvent | AiSuggestion) => {
+    setSelectedEvent(event)
   }
 
   const nextPeriod = () => {
@@ -226,15 +233,19 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
               <DropdownMenuItem onClick={() => syncOutlookCalendar().then(() => router.refresh())}>
                 Sync with Outlook
               </DropdownMenuItem>
-              /*
+              {/* Commented out as per original code
               <DropdownMenuItem onClick={() => syncGithub().then(() => router.refresh())}>
                 Sync with Google Calendar
               </DropdownMenuItem>
-              */
+              */}
             </DropdownMenuContent>
           </DropdownMenu>
-          <button className="ml-auto" onClick={() => generateSchedule().then(() => router.refresh())}>
-            test
+          <button className="ml-auto" 
+          disabled={isLoading}
+          onClick={() => 
+          mutateAsync({}).then(() => router.refresh())
+          }>
+            Generate Schedule
           </button>
         </div>
       </motion.div>
@@ -272,7 +283,7 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
                   events={events}
                   aiSuggestions={aiSuggestions}
                   onDateClick={onDateClick}
-                  onEventClick={setSelectedEvent}
+                  onEventClick={onEventClick}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                 />
@@ -282,8 +293,9 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
                   currentDate={currentDate}
                   selectedDate={selectedDate}
                   events={events}
+                  aiSuggestions={aiSuggestions}
                   onDateClick={onDateClick}
-                  onEventClick={setSelectedEvent}
+                  onEventClick={onEventClick}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                 />
@@ -292,7 +304,8 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
                 <DayView
                   currentDate={currentDate}
                   events={events}
-                  onEventClick={setSelectedEvent}
+                  aiSuggestions={aiSuggestions}
+                  onEventClick={onEventClick}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                 />
@@ -317,19 +330,14 @@ const CalendarPage: React.FC<CalendarPageProps> = ({ initialEvents, initialAiSug
         onSuggestionDrag={handleSuggestionDrag}
       />
       <AnimatePresence>
-        {selectedEvent && (
+        {(selectedEvent ?? selectedAgenda.length > 0) && (
           <AgendaView
             selectedEvent={selectedEvent}
             setSelectedEvent={setSelectedEvent}
-          />
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {selectedAgenda.length > 0 && (
-          <AgendaView
             selectedDate={selectedDate}
             selectedAgenda={selectedAgenda}
             setSelectedAgenda={setSelectedAgenda}
+            onSuggestionClick={handleSuggestionClick}
           />
         )}
       </AnimatePresence>

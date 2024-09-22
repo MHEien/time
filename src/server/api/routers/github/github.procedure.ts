@@ -16,5 +16,5 @@ export const githubRouter = createTRPCRouter({
     .query(({ ctx, input }) => services.myGithubCommits(ctx, input)),
   fetchData: protectedProcedure
     .input(inputs.fetchGithubDataSchema)
-    .query(({ ctx }) => services.fetchGitHubData(ctx)),
+    .mutation(({ ctx }) => services.fetchGitHubData(ctx)),
 });

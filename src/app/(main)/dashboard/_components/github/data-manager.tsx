@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/moving-border'
 import { CustomTabs as Tabs } from '@/components/custom-tabs'
 import type { RouterOutputs } from '@/trpc/shared'
 import { format } from 'date-fns'
+import { useRouter } from 'next/navigation'
+import { api } from '@/trpc/react'
 
 type Commit = RouterOutputs['github']['myCommits'][number]
 type Issue = RouterOutputs['github']['myIssues'][number]
@@ -58,6 +60,10 @@ const DataItem = ({ item, type }: { item: Issue | PullRequest | Commit; type: ke
 
 export default function GitHubDataManager({ initialData }: { initialData: GitHubData }) {
   const [activeTab, setActiveTab] = useState<keyof GitHubData>('issues')
+
+  const router = useRouter()
+
+  const fetchGitHubData = api.github.fetchData.useMutation()
 
   const tabs = [
     { title: 'Issues', value: 'issues' },
@@ -108,12 +114,20 @@ export default function GitHubDataManager({ initialData }: { initialData: GitHub
                 {
                   title: 'Sync Data',
                   description: 'Update your local database with the latest GitHub data',
-                  link: '/dashboard/github/sync',
+                  onClick: () => {
+                    fetchGitHubData.mutateAsync({})
+                      .then(() => {
+                        router.refresh();
+                      })
+                      .catch((error) => {
+                        console.error('Error fetching GitHub data:', error);
+                      });
+                  },
                 },
                 {
                   title: 'Manage Settings',
                   description: 'Configure your GitHub integration settings',
-                  link: '#',
+                  onClick: () => router.push('/dashboard/github/settings'),
                 },
               ]}
             />
