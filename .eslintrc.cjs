@@ -4,11 +4,15 @@ const config = {
   parserOptions: {
     project: true,
   },
-  plugins: ["@typescript-eslint"],
+  plugins: [
+    "@typescript-eslint",
+    "eslint-plugin-next-on-pages",
+  ],
   extends: [
     "plugin:@next/next/recommended",
     "plugin:@typescript-eslint/recommended-type-checked",
     "plugin:@typescript-eslint/stylistic-type-checked",
+    "plugin:eslint-plugin-next-on-pages/recommended",
   ],
   rules: {
     // Global rules for your project
