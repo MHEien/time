@@ -5,7 +5,7 @@ import { retrieveEmbeddings } from '../../fetch-and-embed';
 import { aiSuggestedEvents } from '@/server/db/schema';
 import type { ProtectedTRPCContext } from '../../trpc';
 import { eq } from 'drizzle-orm';
-import { stringify, parse } from 'superjson';
+import { stringify } from 'superjson';
 import { z } from 'zod';
 
 const DetailedScheduleItemSchema = z.object({
@@ -58,19 +58,29 @@ async function generateInitialSchedule(): Promise<ScheduleItem[]> {
       "priority": number (1-5)
     }}
   
+    IMPORTANT CONSTRAINTS:
+    1. Today's date is {dateString}.
+    2. All suggested start times and end times MUST be between Monday and Friday (inclusive).
+    3. Do not schedule any tasks on weekends (Saturday or Sunday).
+    4. Ensure all dates are in the future, starting from tomorrow.
+    5. The time range for tasks should be between 9:00 AM and 5:00 PM.
+  
     Ensure tasks are appropriately spaced and prioritized. 
-   IMPORTANT! Your response must be ONLY the JSON array, with no additional text before or after. Only return the JSON array, but do not include any markdown code block delimiters. Simply output the raw JSON object
+    IMPORTANT! Your response must be ONLY the JSON array, with no additional text before or after. Only return the JSON array, but do not include any markdown code block delimiters. Simply output the raw JSON object
   `);
 
   console.log('Generating initial schedule...');
   const chain = prompt.pipe(model).pipe(new StringOutputParser());
   const result = await chain.invoke({
     relevantDataString: stringify(relevantData),
+    dateString: new Date().toISOString().split('T')[0]!,
   });
 
   console.log('Initial schedule generation result:', result);
 
   try {
+    //TODO: Fix this
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const parsedJson = JSON.parse(result);
     const validatedSchedule = ScheduleArraySchema.parse(parsedJson);
     console.log('Parsed and validated initial schedule:', validatedSchedule);
@@ -141,6 +151,8 @@ async function extendScheduleItem(item: ScheduleItem): Promise<DetailedScheduleI
 
   let parsedResult;
   try {
+    // TODO: Fix this
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     parsedResult = JSON.parse(result);
     console.log('Parsed result:', parsedResult);
   } catch (parseError) {
@@ -217,6 +229,8 @@ async function refineSchedule(schedule: DetailedScheduleItem[]): Promise<Detaile
     }
     const jsonString = jsonMatch[0];
     
+    // TODO: Fix this
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const parsedResult = JSON.parse(jsonString);
     const validatedSchedule = ScheduleSchema.parse(parsedResult);
     

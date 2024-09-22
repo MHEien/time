@@ -6,15 +6,6 @@ export async function syncOutlookCalendar() {
   return response;
 }
 
-export async function generateSchedule() {
-  const response = await api.aiSuggestions.generateNextWeekEvents.mutate({});
-  return response;
-}
-
-export async function syncGithub() {
-  const response = await api.github.fetchData.query({});
-  return response;
-}
 
 export async function getGithubData() {
   const issues = await api.github.myIssues.query({});

@@ -12,7 +12,7 @@ interface MonthViewProps {
   events: CalendarEvent[]
   aiSuggestions: AiSuggestion[]
   onDateClick: (day: Date) => void
-  onEventClick: (event: CalendarEvent) => void
+  onEventClick: (event: CalendarEvent | AiSuggestion) => void
   onDragStart: (event: CalendarEvent) => void
   onDragEnd: (day: Date) => void
 }
@@ -27,15 +27,20 @@ const MonthView: React.FC<MonthViewProps> = ({
   onDragStart,
   onDragEnd
 }) => {
-  const sortEvents = (events: CalendarEvent[]): CalendarEvent[] => {
-    return [...events].sort((a, b) => {
+  const sortItems = (items: (CalendarEvent | AiSuggestion)[]): (CalendarEvent | AiSuggestion)[] => {
+    return [...items].sort((a, b) => {
+      const aStartTime = 'startTime' in a ? a.startTime : a.suggestedStartTime
+      const bStartTime = 'startTime' in b ? b.startTime : b.suggestedStartTime
+      const aEndTime = 'endTime' in a ? a.endTime : a.suggestedEndTime
+      const bEndTime = 'endTime' in b ? b.endTime : b.suggestedEndTime
+
       // Sort by start time (ascending)
-      if (a.startTime.getTime() !== b.startTime.getTime()) {
-        return a.startTime.getTime() - b.startTime.getTime()
+      if (aStartTime.getTime() !== bStartTime.getTime()) {
+        return aStartTime.getTime() - bStartTime.getTime()
       }
       // If start times are the same, sort by duration (shortest first)
-      const aDuration = a.endTime.getTime() - a.startTime.getTime()
-      const bDuration = b.endTime.getTime() - b.startTime.getTime()
+      const aDuration = aEndTime.getTime() - aStartTime.getTime()
+      const bDuration = bEndTime.getTime() - bStartTime.getTime()
       return aDuration - bDuration
     })
   }
@@ -59,7 +64,12 @@ const MonthView: React.FC<MonthViewProps> = ({
     return (
       <div className="grid grid-cols-7 gap-2">
         {monthDays.map((day) => {
-          const dayEvents = sortEvents(getEventsForDay(events, day))
+          const dayEvents = getEventsForDay(events, day)
+          const daySuggestions = aiSuggestions.filter(suggestion => 
+            isSameDay(suggestion.suggestedStartTime, day) && suggestion.status === 'pending'
+          )
+          const sortedItems = sortItems([...dayEvents, ...daySuggestions])
+
           return (
             <motion.div
               key={day.toString()}
@@ -86,39 +96,29 @@ const MonthView: React.FC<MonthViewProps> = ({
               }}
             >
               <span className="text-sm font-semibold">{formatDate(day, 'd')}</span>
-              {dayEvents.map(event => (
-                <motion.div 
-                  key={event.id} 
-                  className={`text-xs ${getEventColor(event)} text-white p-1 mt-1 rounded ${event.externalCalendarId ? 'cursor-default' : 'cursor-move'}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  draggable={!event.externalCalendarId}
-                  onDragStart={(e) => {
-                    e.stopPropagation()
-                    if (!event.externalCalendarId) onDragStart(event)
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onEventClick(event)
-                  }}
-                >
-                  {event.title}
-                </motion.div>
-              ))}
-              {aiSuggestions
-                .filter(suggestion => isSameDay(suggestion.suggestedStartTime, day) && suggestion.status === 'pending')
-                .map(suggestion => (
+              {sortedItems.map(item => {
+                const isAiSuggestion = 'suggestedStartTime' in item
+                return (
                   <motion.div 
-                    key={suggestion.id} 
-                    className="text-xs bg-purple-500 text-white p-1 mt-1 rounded"
+                    key={item.id} 
+                    className={`text-xs ${isAiSuggestion ? 'bg-purple-500' : getEventColor(item)} text-white p-1 mt-1 rounded ${isAiSuggestion || (item).externalCalendarId ? 'cursor-pointer' : 'cursor-move'}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
+                    draggable={!isAiSuggestion && !(item).externalCalendarId}
+                    onDragStart={(e) => {
+                      e.stopPropagation()
+                      if (!isAiSuggestion && !(item).externalCalendarId) onDragStart(item)
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEventClick(item)
+                    }}
                   >
-                    {suggestion.title}
+                    {item.title} {isAiSuggestion && '(AI)'}
                   </motion.div>
-                ))}
+                )
+              })}
             </motion.div>
           )
         })}
