@@ -7,6 +7,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 const config = {
+  output: 'standalone',
     images: {
         remotePatterns: [
           {
