@@ -126,6 +126,7 @@ async function extendScheduleItem(item: ScheduleItem): Promise<DetailedScheduleI
   }}
 
     IMPORTANT! Your response must be ONLY a valid JSON object. Do not include any additional text before or after. Do not use markdown code block delimiters.
+    IMPORTANT! Properties in the object must follow the exact types and names specified in the schema.
   `);
 
   console.log(`Generating detailed task description for: ${item.title}`);
@@ -212,7 +213,7 @@ async function refineSchedule(schedule: DetailedScheduleItem[]): Promise<Detaile
       "background": "string",
       "challenges": "string"
     }}
-
+    IMPORTANT! Properties in the object must follow the exact types and names specified in the schema.
     IMPORTANT! Your response must be ONLY the JSON array, with no additional text before or after. Only return the JSON array, but do not include any markdown code block delimiters. Simply output the raw JSON object
   `);
 

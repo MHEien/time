@@ -1,5 +1,4 @@
 import { generateId } from "lucia";
-import crypto from "crypto";
 import type { ProtectedTRPCContext } from "../../trpc";
 import type {
   CreateApiKeyInput,
@@ -29,7 +28,7 @@ export const getApiKey = async (ctx: ProtectedTRPCContext, { id }: GetApiKeyInpu
 
 export const createApiKey = async (ctx: ProtectedTRPCContext, input: CreateApiKeyInput) => {
   const id = generateId(15);
-  const key = crypto.randomBytes(32).toString("hex");
+  const key = generateId(32);
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 30); // Expires in 30 days
 

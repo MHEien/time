@@ -7,7 +7,7 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    DATABASE_URL: z
+    POSTGRES_URL: z
       .string()
       .url()
       .refine(
@@ -15,7 +15,6 @@ export const env = createEnv({
         "You forgot to change the default URL",
       ),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    MOCK_SEND_EMAIL: z.boolean().default(false),
     OPENAI_API_KEY: z.string().trim().min(1),
     DISCORD_CLIENT_ID: z.string().trim().min(1),
     DISCORD_CLIENT_SECRET: z.string().trim().min(1),
@@ -26,10 +25,6 @@ export const env = createEnv({
     MICROSOFT_ENTRA_ID_TENANT_ID: z.string().trim().optional(),
     PINECONE_API_KEY: z.string().trim().min(1),
     PINECONE_INDEX: z.string().trim().min(1),
-    SMTP_HOST: z.string().trim().min(1),
-    SMTP_PORT: z.number().int().min(1),
-    SMTP_USER: z.string().trim().min(1),
-    SMTP_PASSWORD: z.string().trim().min(1),
     STRIPE_API_KEY: z.string().trim().min(1),
     STRIPE_WEBHOOK_SECRET: z.string().trim().min(1),
     STRIPE_PRO_MONTHLY_PLAN_ID: z.string().trim().min(1),
@@ -51,14 +46,9 @@ export const env = createEnv({
    */
   runtimeEnv: {
     // Server-side env vars
-    DATABASE_URL: process.env.DATABASE_URL,
+    POSTGRES_URL: process.env.POSTGRES_URL,
     NODE_ENV: process.env.NODE_ENV,
-    SMTP_HOST: process.env.SMTP_HOST,
-    SMTP_PORT: parseInt(process.env.SMTP_PORT ?? ""),
-    SMTP_USER: process.env.SMTP_USER,
-    SMTP_PASSWORD: process.env.SMTP_PASSWORD,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    MOCK_SEND_EMAIL: process.env.MOCK_SEND_EMAIL === "true" || process.env.MOCK_SEND_EMAIL === "1",
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,

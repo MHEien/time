@@ -1,0 +1,59 @@
+version: "3.9"
+services:
+  app:
+    platform: "linux/amd64"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        NEXT_PUBLIC_CLIENTVAR: "clientvar"
+    working_dir: /app
+    ports:
+      - '${PORT}:3000'
+    environment:
+      - 'HOSTNAME=0.0.0.0'
+      - 'NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}'
+      - 'POSTGRES_URL=${POSTGRES_URL}'
+      - 'DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}'
+      - 'DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}'
+      - 'MICROSOFT_ENTRA_ID_CLIENT_ID=${MICROSOFT_ENTRA_ID_CLIENT_ID}'
+      - 'MICROSOFT_ENTRA_ID_CLIENT_SECRET=${MICROSOFT_ENTRA_ID_CLIENT_SECRET}'
+      - 'MICROSOFT_ENTRA_ID_TENANT_ID=${MICROSOFT_ENTRA_ID_TENANT_ID}'
+      - 'GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}'
+      - 'GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}'
+      - 'STRIPE_API_KEY=${STRIPE_API_KEY}'
+      - 'STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}'
+      - 'STRIPE_PRO_MONTHLY_PLAN_ID=${STRIPE_PRO_MONTHLY_PLAN_ID}'
+      - 'OPENAI_API_KEY=${OPENAI_API_KEY}'
+      - 'PINECONE_API_KEY=${PINECONE_API_KEY}'
+      - 'PINECONE_INDEX=${PINECONE_INDEX}'
+    volumes:
+      - .:/app
+    labels:
+      - coolify.managed=true
+      - coolify.version=4.0.0-beta.341
+      - coolify.applicationId=3
+      - coolify.type=application
+      - coolify.name=app-gs4ok4gg84g0wkg88www80s8-131449533118
+      - coolify.pullRequestId=0
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+      - traefik.http.routers.http-0-gs4ok4gg84g0wkg88www80s8-app.entryPoints=http
+      - traefik.http.routers.http-0-gs4ok4gg84g0wkg88www80s8-app.middlewares=redirect-to-https
+      - 'traefik.http.routers.http-0-gs4ok4gg84g0wkg88www80s8-app.rule=Host(`time.heien.dev`) && PathPrefix(`/`)'
+      - traefik.http.routers.https-0-gs4ok4gg84g0wkg88www80s8-app.entryPoints=https
+      - traefik.http.routers.https-0-gs4ok4gg84g0wkg88www80s8-app.middlewares=gzip
+      - 'traefik.http.routers.https-0-gs4ok4gg84g0wkg88www80s8-app.rule=Host(`time.heien.dev`) && PathPrefix(`/`)'
+      - traefik.http.routers.https-0-gs4ok4gg84g0wkg88www80s8-app.tls.certresolver=letsencrypt
+      - traefik.http.routers.https-0-gs4ok4gg84g0wkg88www80s8-app.tls=true
+    networks:
+      - coolify
+networks:
+  coolify:
+    external: true

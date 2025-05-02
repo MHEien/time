@@ -8,7 +8,7 @@ import { absoluteUrl } from "@/lib/utils"
 
 // Uncomment the following lines if you are using nodejs 18 or lower. Not required in Node.js 20, CloudFlare Workers, Deno, Bun, and Vercel Edge Functions.
 // import { webcrypto } from "node:crypto";
-// globalThis.crypto = webcrypto as Crypto;
+ //globalThis.crypto = webcrypto as Crypto;
 
 const adapter = new DrizzlePostgreSQLAdapter(db, sessions, users);
 
